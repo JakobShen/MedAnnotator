@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Med Evaluation Annotation Tool</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: #f5f5f7;
+      color: #222;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background-color: #1f2933;
+      color: #f9fafb;
+    }
+    .header-left, .header-right {
+      display: flex;
+      align-items: center;
+    }
+    .header-left span {
+      margin-right: 16px;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-right: 24px;
+    }
+    .header-counter {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .header-right button {
+      margin-left: 8px;
+    }
+    main {
+      flex: 1 1 auto;
+      display: flex;
+      min-height: 0;
+    }
+    aside {
+      flex: 0 0 260px;
+      max-width: 320px;
+      border-right: 1px solid #e0e0e0;
+      background-color: #ffffff;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    #case-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .case-item {
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      font-size: 13px;
+    }
+    .case-item:hover {
+      background-color: #f0f4ff;
+    }
+    .case-item.active {
+      background-color: #e0ebff;
+      font-weight: 600;
+    }
+    .case-item .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      background-color: #d0d0d0;
+      flex-shrink: 0;
+    }
+    .case-item.completed .status-dot {
+      background-color: #22c55e;
+    }
+    .case-item-title {
+      flex: 1 1 auto;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    section#case-detail-panel {
+      flex: 1 1 auto;
+      padding: 12px 16px 40px 16px;
+      overflow-y: auto;
+      position: relative;
+    }
+    #case-title {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+    }
+    #case-url {
+      font-size: 13px;
+      word-break: break-all;
+    }
+    #load-status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+    .info-section {
+      margin-top: 16px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      padding: 12px 14px;
+    }
+    .info-section h3 {
+      margin-top: 0;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    .info-section p {
+      margin: 4px 0;
+      font-size: 13px;
+    }
+    #steps-list {
+      padding-left: 20px;
+      margin: 4px 0;
+    }
+    #steps-list li {
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    #steps-list .step-text-line {
+      margin-bottom: 2px;
+    }
+    #steps-list .step-source {
+      color: #555;
+      font-style: italic;
+      margin-left: 4px;
+    }
+    #steps-list .step-reason {
+      display: block;
+      color: #555;
+      margin-top: 2px;
+    }
+    .step-rank-controls {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #374151;
+    }
+    .step-rank-label {
+      margin-right: 4px;
+      font-weight: 600;
+    }
+    .rank-option {
+      margin-right: 6px;
+    }
+    #localisation-reference dl {
+      margin: 0;
+      font-size: 13px;
+    }
+    #localisation-reference dt {
+      font-weight: 600;
+    }
+    #localisation-reference dd {
+      margin: 0 0 4px 0;
+    }
+    #localisation-levels {
+      font-size: 13px;
+    }
+    #localisation-levels .level-row {
+      margin-bottom: 4px;
+    }
+    #localisation-levels .level-label {
+      font-weight: 600;
+      margin-right: 4px;
+    }
+    button {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background-color: #e5e7eb;
+      color: #111827;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #d1d5db;
+    }
+    button.primary {
+      background-color: #2563eb;
+      border-color: #1d4ed8;
+      color: #f9fafb;
+    }
+    button.primary:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    #autosave-status {
+      font-size: 12px;
+      color: #e5e7eb;
+      margin-left: 12px;
+    }
+    .field-group {
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    .field-group label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .field-group input[type="number"],
+    .field-group select,
+    .field-group textarea {
+      width: 100%;
+      padding: 4px 6px;
+      font-size: 13px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+    }
+    .field-group textarea {
+      resize: vertical;
+    }
+    .radio-group-inline label {
+      margin-right: 10px;
+      font-weight: 400;
+    }
+    #json-load-warning {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #b91c1c;
+    }
+    #manual-load-container {
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    #manual-load-container button {
+      margin-top: 4px;
+    }
+    @media (max-width: 900px) {
+      aside {
+        flex: 0 0 200px;
+      }
+    }
+    @media (max-width: 700px) {
+      main {
+        flex-direction: column;
+      }
+      aside {
+        flex: 0 0 auto;
+        max-height: 180px;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      section#case-detail-panel {
+        padding-bottom: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <span class="header-title">Med Evaluation Annotation Tool</span>
+      <span class="header-counter" id="header-case-counter">No dataset loaded</span>
+    </div>
+    <div class="header-right">
+      <button id="btn-prev-case">Previous case</button>
+      <button id="btn-next-case">Next case</button>
+      <button id="btn-open-eurorad" class="primary">Open Eurorad</button>
+      <button id="btn-export-json">Export JSON</button>
+      <button id="btn-clear-memory">Clear memory</button>
+      <span id="autosave-status"></span>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <h3 style="margin: 4px 0 8px 4px; font-size: 14px;">Case list</h3>
+      <ul id="case-list"></ul>
+    </aside>
+    <section id="case-detail-panel">
+      <div id="case-info" class="info-section">
+        <h2 id="case-title">Please load a JSON file to start.</h2>
+        <p>URL:
+          <a id="case-url" href="#" target="_blank" rel="noopener noreferrer"></a>
+        </p>
+        <p id="load-status">Step 1: click “Choose JSON file...” below and select your dataset (same structure as the example JSON).</p>
+        <div id="manual-load-container">
+          <p>You are running this tool from a web server (e.g. GitHub Pages). Please click the button below to select your local dataset JSON file (for example, <strong>example_1_items_simplified.json</strong>):</p>
+          <button id="btn-manual-load-json">Choose JSON file...</button>
+          <div id="json-load-warning"></div>
+        </div>
+      </div>
+
+      <div class="info-section" id="diagnostic-steps-section" style="display:none;">
+        <h3>Diagnostic steps (read-only from JSON)</h3>
+        <p id="required-number-original"></p>
+        <ol id="steps-list"></ol>
+        <div class="field-group">
+          <label for="required-number-input">Required steps (doctor evaluation):</label>
+          <input type="number" id="required-number-input" min="0" step="1" />
+        </div>
+      </div>
+
+      <div class="info-section" id="localisation-section" style="display:none;">
+        <h3>Localisation rubric (reference only)</h3>
+        <div id="localisation-reference"></div>
+        <hr style="margin: 10px 0;">
+        <div id="localisation-levels"></div>
+        <div class="field-group">
+          <label>Is the Localisation rubric reasonable?</label>
+          <div class="radio-group-inline">
+            <label><input type="radio" name="localisation-ok" value="true"> True</label>
+            <label><input type="radio" name="localisation-ok" value="false"> False</label>
+            <label><input type="radio" name="localisation-ok" value="unknown" checked> Not decided</label>
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="localisation-comment">Comment (optional):</label>
+          <textarea id="localisation-comment" rows="3" placeholder="For example: which part of the rubric is unreasonable, suggested changes, etc."></textarea>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <input type="file" id="jsonFileInput" accept=".json,application/json" style="display:none;" />
+
+  <script>
+    (function () {
+      "use strict";
+
+      var DATASET_ID = "eurorad_example_1";
+      var STORAGE_KEY = "eurorad_annotations_" + DATASET_ID + "_v1";
+
+      var cases = [];
+      var currentIndex = 0;
+      var answersByCaseId = {};
+      var euroradWindow = null;
+      var autosaveInterval = 5000;
+      var autosaveTimerStarted = false;
+      var dirty = false;
+
+      // DOM elements
+      var headerCaseCounter = document.getElementById("header-case-counter");
+      var autosaveStatus = document.getElementById("autosave-status");
+      var caseListEl = document.getElementById("case-list");
+      var caseTitleEl = document.getElementById("case-title");
+      var caseUrlEl = document.getElementById("case-url");
+      var loadStatusEl = document.getElementById("load-status");
+      var manualLoadContainer = document.getElementById("manual-load-container");
+      var jsonLoadWarning = document.getElementById("json-load-warning");
+      var btnManualLoadJson = document.getElementById("btn-manual-load-json");
+
+      var diagnosticStepsSection = document.getElementById("diagnostic-steps-section");
+      var requiredNumberOriginalEl = document.getElementById("required-number-original");
+      var stepsListEl = document.getElementById("steps-list");
+
+      var localisationSection = document.getElementById("localisation-section");
+      var localisationReferenceEl = document.getElementById("localisation-reference");
+      var localisationLevelsEl = document.getElementById("localisation-levels");
+
+      var requiredNumberInput = document.getElementById("required-number-input");
+      var localisationCommentEl = document.getElementById("localisation-comment");
+      var localisationOkRadioEls = document.getElementsByName("localisation-ok");
+
+      var btnPrevCase = document.getElementById("btn-prev-case");
+      var btnNextCase = document.getElementById("btn-next-case");
+      var btnOpenEurorad = document.getElementById("btn-open-eurorad");
+      var btnExportJson = document.getElementById("btn-export-json");
+      var btnClearMemory = document.getElementById("btn-clear-memory");
+      var jsonFileInput = document.getElementById("jsonFileInput");
+
+      function formatTime(date) {
+        function pad(n) { return n < 10 ? "0" + n : "" + n; }
+        return pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+      }
+
+      function extractCaseId(caseUrl, index) {
+        if (typeof caseUrl === "string") {
+          var match = caseUrl.match(/(\d+)(?:\/)?$/);
+          if (match && match[1]) {
+            return match[1];
+          }
+          return caseUrl;
+        }
+        return "case_" + index;
+      }
+
+      function loadFromLocalStorage() {
+        try {
+          var raw = window.localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          var parsed = JSON.parse(raw);
+          if (parsed && parsed.answers && Array.isArray(parsed.answers)) {
+            var map = {};
+            for (var i = 0; i < parsed.answers.length; i++) {
+              var a = parsed.answers[i];
+              if (a && a.case_id) {
+                var copy = {};
+                if (typeof a.required_number !== "undefined") {
+                  copy.required_number = a.required_number;
+                }
+                if (a.steps_rank) {
+                  copy.steps_rank = a.steps_rank;
+                }
+                if (typeof a.localisation_rubric_ok !== "undefined") {
+                  copy.localisation_rubric_ok = a.localisation_rubric_ok;
+                }
+                if (typeof a.localisation_comment !== "undefined") {
+                  copy.localisation_comment = a.localisation_comment;
+                }
+                map[a.case_id] = copy;
+              }
+            }
+            answersByCaseId = map;
+          }
+          if (typeof parsed.last_case_index === "number" && parsed.last_case_index >= 0) {
+            currentIndex = parsed.last_case_index;
+          }
+        } catch (e) {
+          console.error("Failed to read localStorage:", e);
+        }
+      }
+
+      function saveToLocalStorage() {
+        try {
+          var answersArray = [];
+          for (var caseId in answersByCaseId) {
+            if (!Object.prototype.hasOwnProperty.call(answersByCaseId, caseId)) continue;
+            var entry = answersByCaseId[caseId];
+            var out = { case_id: caseId };
+            if (typeof entry.required_number !== "undefined") {
+              out.required_number = entry.required_number;
+            }
+            if (entry.steps_rank) {
+              out.steps_rank = entry.steps_rank;
+            }
+            if (typeof entry.localisation_rubric_ok !== "undefined") {
+              out.localisation_rubric_ok = entry.localisation_rubric_ok;
+            }
+            if (typeof entry.localisation_comment !== "undefined") {
+              out.localisation_comment = entry.localisation_comment;
+            }
+            answersArray.push(out);
+          }
+          var payload = {
+            dataset_id: DATASET_ID,
+            answers: answersArray,
+            last_updated: new Date().toISOString(),
+            last_case_index: currentIndex
+          };
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          autosaveStatus.textContent = "Auto-saved at " + formatTime(new Date());
+        } catch (e) {
+          console.error("Failed to write to localStorage:", e);
+          autosaveStatus.textContent = "Auto-save failed (please check browser settings).";
+        }
+      }
+
+      function markDirty() {
+        dirty = true;
+      }
+
+      function autoSaveTick() {
+        if (!dirty) return;
+        saveToLocalStorage();
+        dirty = false;
+      }
+
+      function buildCaseList() {
+        caseListEl.innerHTML = "";
+        for (var i = 0; i < cases.length; i++) {
+          var c = cases[i];
+          var caseId = extractCaseId(c.case_url, i);
+          var li = document.createElement("li");
+          li.className = "case-item";
+          li.setAttribute("data-index", String(i));
+          li.setAttribute("data-case-id", caseId);
+
+          var dot = document.createElement("div");
+          dot.className = "status-dot";
+          li.appendChild(dot);
+
+          var label = document.createElement("div");
+          label.className = "case-item-title";
+          var indexLabel = (i + 1) + ". ";
+          var titleText = c.case_title || caseId;
+          label.textContent = indexLabel + titleText;
+          li.appendChild(label);
+
+          li.addEventListener("click", (function (idx) {
+            return function () {
+              switchCase(idx, true);
+            };
+          })(i));
+
+          caseListEl.appendChild(li);
+        }
+        refreshCaseListCompletion();
+        updateHeaderCounter();
+      }
+
+      function refreshCaseListCompletion() {
+        var items = caseListEl.querySelectorAll(".case-item");
+        for (var i = 0; i < items.length; i++) {
+          var li = items[i];
+          var caseId = li.getAttribute("data-case-id");
+          var answer = answersByCaseId[caseId];
+          if (answer && typeof answer.localisation_rubric_ok !== "undefined") {
+            li.classList.add("completed");
+          } else {
+            li.classList.remove("completed");
+          }
+          if (i === currentIndex) {
+            li.classList.add("active");
+          } else {
+            li.classList.remove("active");
+          }
+        }
+      }
+
+      function updateHeaderCounter() {
+        if (!cases || cases.length === 0) {
+          headerCaseCounter.textContent = "No dataset loaded";
+          return;
+        }
+        var currentNumber = currentIndex + 1;
+        headerCaseCounter.textContent = "Case " + currentNumber + " / " + cases.length;
+      }
+
+      function renderDiagnosticSteps(caseObj, caseId) {
+        diagnosticStepsSection.style.display = "block";
+        var ds = caseObj.diagnostic_steps || {};
+        if (typeof ds.required_number !== "undefined" && ds.required_number !== null) {
+          requiredNumberOriginalEl.textContent = "Original required_number: " + ds.required_number;
+        } else {
+          requiredNumberOriginalEl.textContent = "Original required_number: (not specified in JSON)";
+        }
+        stepsListEl.innerHTML = "";
+        var steps = (ds.steps && Array.isArray(ds.steps)) ? ds.steps : [];
+        var saved = answersByCaseId[caseId];
+        var savedRanks = (saved && saved.steps_rank) ? saved.steps_rank : {};
+
+        for (var i = 0; i < steps.length; i++) {
+          var step = steps[i];
+          var li = document.createElement("li");
+
+          var textLine = document.createElement("div");
+          textLine.className = "step-text-line";
+          var textSpan = document.createElement("span");
+          textSpan.textContent = step.step || "";
+          textLine.appendChild(textSpan);
+
+          if (step.source) {
+            var sourceSpan = document.createElement("span");
+            sourceSpan.className = "step-source";
+            sourceSpan.textContent = " [" + step.source + "]";
+            textLine.appendChild(sourceSpan);
+          }
+          li.appendChild(textLine);
+
+          if (step.reason) {
+            var reasonSpan = document.createElement("span");
+            reasonSpan.className = "step-reason";
+            reasonSpan.textContent = step.reason;
+            li.appendChild(reasonSpan);
+          }
+
+          var rankDiv = document.createElement("div");
+          rankDiv.className = "step-rank-controls";
+          var labelSpan = document.createElement("span");
+          labelSpan.className = "step-rank-label";
+          labelSpan.textContent = "Rank:";
+          rankDiv.appendChild(labelSpan);
+
+          var savedVal = undefined;
+          if (savedRanks && Object.prototype.hasOwnProperty.call(savedRanks, i)) {
+            savedVal = savedRanks[i];
+          }
+
+          for (var val = 1; val <= 5; val++) {
+            var optLabel = document.createElement("label");
+            optLabel.className = "rank-option";
+            var radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "step-rank-" + caseId + "-" + i;
+            radio.value = String(val);
+
+            if (savedVal === val || savedVal === String(val)) {
+              radio.checked = true;
+            }
+
+            radio.addEventListener("change", function () {
+              updateAnswerFromForm();
+            });
+
+            optLabel.appendChild(radio);
+            optLabel.appendChild(document.createTextNode(" " + val));
+            rankDiv.appendChild(optLabel);
+          }
+
+          li.appendChild(rankDiv);
+          stepsListEl.appendChild(li);
+        }
+      }
+
+      function renderLocalisationRubric(caseObj) {
+        localisationSection.style.display = "block";
+        localisationReferenceEl.innerHTML = "";
+        localisationLevelsEl.innerHTML = "";
+
+        var rubric = caseObj.rubric_0_to_3 && caseObj.rubric_0_to_3.Localisation;
+        if (!rubric) {
+          localisationReferenceEl.textContent = "No Localisation rubric in this case JSON.";
+          return;
+        }
+
+        var ref = rubric.reference_answer;
+        if (ref && typeof ref === "object") {
+          var dl = document.createElement("dl");
+
+          if (typeof ref.Laterality !== "undefined") {
+            var dt1 = document.createElement("dt");
+            dt1.textContent = "Laterality:";
+            dl.appendChild(dt1);
+            var dd1 = document.createElement("dd");
+            dd1.textContent = ref.Laterality;
+            dl.appendChild(dd1);
+          }
+          if (typeof ref["Organ/Region"] !== "undefined") {
+            var dt2 = document.createElement("dt");
+            dt2.textContent = "Organ/Region:";
+            dl.appendChild(dt2);
+            var dd2 = document.createElement("dd");
+            dd2.textContent = ref["Organ/Region"];
+            dl.appendChild(dd2);
+          }
+          if (typeof ref["Specific Substructure/Segment"] !== "undefined") {
+            var dt3 = document.createElement("dt");
+            dt3.textContent = "Specific Substructure/Segment:";
+            dl.appendChild(dt3);
+            var dd3 = document.createElement("dd");
+            dd3.textContent = ref["Specific Substructure/Segment"];
+            dl.appendChild(dd3);
+          }
+
+          localisationReferenceEl.appendChild(dl);
+        }
+
+        var levels = ["3", "2", "1", "0"];
+        for (var i = 0; i < levels.length; i++) {
+          var levelKey = levels[i];
+          if (typeof rubric[levelKey] !== "undefined") {
+            var row = document.createElement("div");
+            row.className = "level-row";
+            var labelSpan = document.createElement("span");
+            labelSpan.className = "level-label";
+            labelSpan.textContent = levelKey + " points: ";
+            row.appendChild(labelSpan);
+            var textSpan = document.createElement("span");
+            textSpan.textContent = rubric[levelKey];
+            row.appendChild(textSpan);
+            localisationLevelsEl.appendChild(row);
+          }
+        }
+      }
+
+      function updateAnswerFromForm() {
+        if (!cases || cases.length === 0) return;
+        var caseObj = cases[currentIndex];
+        var caseId = extractCaseId(caseObj.case_url, currentIndex);
+
+        var entry = answersByCaseId[caseId] || {};
+
+        // required_number
+        var reqValRaw = requiredNumberInput.value;
+        if (reqValRaw === "") {
+          delete entry.required_number;
+        } else {
+          var reqNum = parseInt(reqValRaw, 10);
+          if (!isNaN(reqNum)) {
+            entry.required_number = reqNum;
+          }
+        }
+
+        // steps_rank
+        var ds = caseObj.diagnostic_steps || {};
+        var steps = (ds.steps && Array.isArray(ds.steps)) ? ds.steps : [];
+        if (steps.length > 0) {
+          var stepsRank = {};
+          for (var i = 0; i < steps.length; i++) {
+            var groupName = "step-rank-" + caseId + "-" + i;
+            var radios = stepsListEl.querySelectorAll('input[name="' + groupName + '"]');
+            for (var j = 0; j < radios.length; j++) {
+              var r = radios[j];
+              if (r.checked) {
+                var rankVal = parseInt(r.value, 10);
+                if (!isNaN(rankVal)) {
+                  stepsRank[i] = rankVal;
+                }
+                break;
+              }
+            }
+          }
+          if (Object.keys(stepsRank).length > 0) {
+            entry.steps_rank = stepsRank;
+          } else {
+            delete entry.steps_rank;
+          }
+        }
+
+        // Localisation rubric OK
+        var locValue = null;
+        for (var k = 0; k < localisationOkRadioEls.length; k++) {
+          if (localisationOkRadioEls[k].checked) {
+            if (localisationOkRadioEls[k].value === "true") {
+              locValue = true;
+            } else if (localisationOkRadioEls[k].value === "false") {
+              locValue = false;
+            } else {
+              locValue = undefined;
+            }
+            break;
+          }
+        }
+        if (typeof locValue === "boolean") {
+          entry.localisation_rubric_ok = locValue;
+        } else {
+          delete entry.localisation_rubric_ok;
+        }
+
+        // Comment
+        var comment = localisationCommentEl.value;
+        if (comment && comment.trim() !== "") {
+          entry.localisation_comment = comment;
+        } else {
+          delete entry.localisation_comment;
+        }
+
+        answersByCaseId[caseId] = entry;
+        markDirty();
+        refreshCaseListCompletion();
+      }
+
+      function switchCase(newIndex, openEuroradToo) {
+        if (!cases || cases.length === 0) return;
+        if (newIndex < 0 || newIndex >= cases.length) return;
+
+        if (cases.length > 0) {
+          updateAnswerFromForm();
+        }
+
+        currentIndex = newIndex;
+
+        var caseObj = cases[currentIndex];
+        var caseId = extractCaseId(caseObj.case_url, currentIndex);
+
+        caseTitleEl.textContent = caseObj.case_title || ("Case " + caseId);
+        if (caseObj.case_url) {
+          caseUrlEl.textContent = caseObj.case_url;
+          caseUrlEl.href = caseObj.case_url;
+        } else {
+          caseUrlEl.textContent = "";
+          caseUrlEl.removeAttribute("href");
+        }
+        loadStatusEl.textContent = "";
+
+        renderDiagnosticSteps(caseObj, caseId);
+        renderLocalisationRubric(caseObj);
+
+        var saved = answersByCaseId[caseId];
+
+        // restore required_number
+        if (saved && typeof saved.required_number !== "undefined") {
+          requiredNumberInput.value = saved.required_number;
+        } else {
+          requiredNumberInput.value = "";
+        }
+
+        // restore localisation radio + comment
+        var selectedValue = "unknown";
+        if (saved && typeof saved.localisation_rubric_ok !== "undefined") {
+          selectedValue = saved.localisation_rubric_ok ? "true" : "false";
+        }
+        for (var r = 0; r < localisationOkRadioEls.length; r++) {
+          localisationOkRadioEls[r].checked = (localisationOkRadioEls[r].value === selectedValue);
+        }
+        if (saved && typeof saved.localisation_comment !== "undefined") {
+          localisationCommentEl.value = saved.localisation_comment;
+        } else {
+          localisationCommentEl.value = "";
+        }
+
+        refreshCaseListCompletion();
+        updateHeaderCounter();
+        updatePrevNextButtonState();
+
+        if (openEuroradToo) {
+          openEuroradForCurrentCase();
+        }
+      }
+
+      function updatePrevNextButtonState() {
+        btnPrevCase.disabled = (currentIndex <= 0 || !cases || cases.length === 0);
+        btnNextCase.disabled = (!cases || cases.length === 0 || currentIndex >= cases.length - 1);
+      }
+
+      function openEuroradForCurrentCase() {
+        if (!cases || cases.length === 0) return;
+        var caseObj = cases[currentIndex];
+        var url = caseObj.case_url;
+        if (!url) return;
+
+        var features = "width=1200,height=800,menubar=yes,toolbar=yes,location=yes,scrollbars=yes,resizable=yes";
+        if (!euroradWindow || euroradWindow.closed) {
+          euroradWindow = window.open(url, "euroradWindow", features);
+        } else {
+          try {
+            euroradWindow.location.href = url;
+            euroradWindow.focus();
+          } catch (e) {
+            euroradWindow = window.open(url, "euroradWindow", features);
+          }
+        }
+      }
+
+      function exportJson() {
+        if (!cases || cases.length === 0) {
+          alert("No case data to export.");
+          return;
+        }
+        updateAnswerFromForm();
+
+        var answersArray = [];
+        for (var caseId in answersByCaseId) {
+          if (!Object.prototype.hasOwnProperty.call(answersByCaseId, caseId)) continue;
+          var entry = answersByCaseId[caseId];
+          var out = { case_id: caseId };
+          if (typeof entry.required_number !== "undefined") {
+            out.required_number = entry.required_number;
+          }
+          if (entry.steps_rank) {
+            out.steps_rank = entry.steps_rank;
+          }
+          if (typeof entry.localisation_rubric_ok !== "undefined") {
+            out.localisation_rubric_ok = entry.localisation_rubric_ok;
+          }
+          if (typeof entry.localisation_comment !== "undefined") {
+            out.localisation_comment = entry.localisation_comment;
+          }
+          answersArray.push(out);
+        }
+
+        var payload = {
+          dataset_id: DATASET_ID,
+          answers: answersArray,
+          exported_at: new Date().toISOString()
+        };
+
+        var jsonStr = JSON.stringify(payload, null, 2);
+        var blob = new Blob([jsonStr], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        var timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        a.href = url;
+        a.download = "result_" + timestamp + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        dirty = false;
+        autosaveStatus.textContent = "Exported JSON at " + formatTime(new Date());
+      }
+
+      function onCasesLoaded(data, sourceName) {
+        if (!Array.isArray(data)) {
+          alert("JSON root is not an array. Please check " + (sourceName || "the JSON file") + ".");
+          return;
+        }
+        cases = data;
+        if (!cases || cases.length === 0) {
+          alert("No cases found in the JSON file.");
+          return;
+        }
+
+        loadFromLocalStorage();
+        buildCaseList();
+        updatePrevNextButtonState();
+
+        if (currentIndex < 0 || currentIndex >= cases.length) {
+          currentIndex = 0;
+        }
+        switchCase(currentIndex, false);
+
+        if (!autosaveTimerStarted) {
+          setInterval(autoSaveTick, autosaveInterval);
+          autosaveTimerStarted = true;
+        }
+
+        loadStatusEl.textContent =
+          "Loaded " + (Array.isArray(data) ? data.length : 0) +
+          " cases from " + (sourceName || "JSON") + ".";
+
+        manualLoadContainer.style.display = "none";
+        jsonLoadWarning.textContent = "";
+      }
+
+      function handleManualJsonFile(file) {
+        if (!file) return;
+        if (!/\.json$/i.test(file.name)) {
+          jsonLoadWarning.textContent = "Please choose a .json file.";
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (evt) {
+          try {
+            var text = evt.target.result;
+            var data = JSON.parse(text);
+            onCasesLoaded(data, file.name);
+          } catch (e) {
+            console.error("Failed to parse JSON:", e);
+            jsonLoadWarning.textContent = "Failed to parse JSON. Please ensure the file format matches the example.";
+          }
+        };
+        reader.onerror = function () {
+          jsonLoadWarning.textContent = "Failed to read the file.";
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      function clearMemory() {
+        if (!confirm("This will clear all saved answers in this browser for this dataset. Continue?")) {
+          return;
+        }
+        try {
+          window.localStorage.removeItem(STORAGE_KEY);
+        } catch (e) {
+          console.error("Failed to clear localStorage:", e);
+        }
+        answersByCaseId = {};
+        dirty = false;
+        autosaveStatus.textContent = "Local memory cleared at " + formatTime(new Date());
+
+        if (cases && cases.length > 0) {
+          var caseObj = cases[currentIndex];
+          var caseId = extractCaseId(caseObj.case_url, currentIndex);
+
+          // reset required_number input
+          requiredNumberInput.value = "";
+
+          // reset step ranks for current case
+          var ds = caseObj.diagnostic_steps || {};
+          var steps = (ds.steps && Array.isArray(ds.steps)) ? ds.steps : [];
+          for (var i = 0; i < steps.length; i++) {
+            var groupName = "step-rank-" + caseId + "-" + i;
+            var radios = stepsListEl.querySelectorAll('input[name="' + groupName + '"]');
+            for (var j = 0; j < radios.length; j++) {
+              radios[j].checked = false;
+            }
+          }
+
+          // reset localisation radios and comment
+          for (var k = 0; k < localisationOkRadioEls.length; k++) {
+            localisationOkRadioEls[k].checked = (localisationOkRadioEls[k].value === "unknown");
+          }
+          localisationCommentEl.value = "";
+
+          refreshCaseListCompletion();
+        }
+      }
+
+      function initEventListeners() {
+        btnPrevCase.addEventListener("click", function () {
+          if (!cases || cases.length === 0) return;
+          var target = currentIndex - 1;
+          if (target >= 0) {
+            switchCase(target, true);
+          }
+        });
+
+        btnNextCase.addEventListener("click", function () {
+          if (!cases || cases.length === 0) return;
+          var target = currentIndex + 1;
+          if (target < cases.length) {
+            switchCase(target, true);
+          }
+        });
+
+        btnOpenEurorad.addEventListener("click", function () {
+          openEuroradForCurrentCase();
+        });
+
+        btnExportJson.addEventListener("click", function () {
+          exportJson();
+        });
+
+        btnClearMemory.addEventListener("click", function () {
+          clearMemory();
+        });
+
+        requiredNumberInput.addEventListener("change", function () {
+          updateAnswerFromForm();
+        });
+
+        localisationCommentEl.addEventListener("input", function () {
+          updateAnswerFromForm();
+        });
+
+        for (var r = 0; r < localisationOkRadioEls.length; r++) {
+          localisationOkRadioEls[r].addEventListener("change", function () {
+            updateAnswerFromForm();
+          });
+        }
+
+        btnManualLoadJson.addEventListener("click", function () {
+          jsonFileInput.value = "";
+          jsonFileInput.click();
+        });
+
+        jsonFileInput.addEventListener("change", function (evt) {
+          var file = evt.target.files && evt.target.files[0];
+          handleManualJsonFile(file);
+        });
+      }
+
+      function init() {
+        updatePrevNextButtonState();
+        initEventListeners();
+        // On GitHub / any web server, we do NOT auto-fetch a JSON file.
+        // The user must explicitly choose a local JSON file via the button.
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>
