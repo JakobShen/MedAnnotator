@@ -308,27 +308,87 @@
         </div>
       </div>
 
-      <div class="info-section" id="diagnostic-steps-section" style="display:none;">
-        <h3>Diagnostic steps (read-only from JSON)</h3>
-        <p id="required-number-original"></p>
-        <ol id="steps-list"></ol>
+      <div class="info-section" id="case-annotations-section" style="display:none;">
+        <h3>Case annotations</h3>
         <div class="field-group">
-          <label for="required-number-input">Required steps (doctor evaluation):</label>
-          <input type="number" id="required-number-input" min="0" step="1" />
+          <label for="difficulty-select">Difficulty:</label>
+          <select id="difficulty-select">
+            <option value="">-- select --</option>
+            <option value="normal">normal</option>
+            <option value="hard">hard</option>
+            <option value="extrem hard">extrem hard</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="rarity-select">Rarity:</label>
+          <select id="rarity-select">
+            <option value="">-- select --</option>
+            <option value="Common">Common</option>
+            <option value="Rare">Rare</option>
+            <option value="Extrem Rare">Extrem Rare</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Demography</label>
+          <div class="radio-group-inline">
+            <label><input type="radio" name="demography" value="true"> True</label>
+            <label><input type="radio" name="demography" value="false"> False</label>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Discard this case?</label>
+          <div class="radio-group-inline">
+            <label><input type="radio" name="discard" value="true"> True</label>
+            <label><input type="radio" name="discard" value="false"> False</label>
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="red-flag-input">Red flag exam:</label>
+          <textarea id="red-flag-input" rows="2" placeholder="Explicitly unsafe or should NOT be performed examinations."></textarea>
+        </div>
+        <div class="field-group">
+          <label for="case-comment">Comment:</label>
+          <textarea id="case-comment" rows="3" placeholder="Overall assessment of the case; if discard, explain why."></textarea>
         </div>
       </div>
 
+      <div class="info-section" id="diagnostic-steps-section" style="display:none;">
+        <h3>Diagnostic steps (read-only from JSON)</h3>
+        <ol id="steps-list"></ol>
+      </div>
+      <div class="info-section" id="imaging-section" style="display:none;">
+        <h3>Imaging examinations (preferred order)</h3>
+        <div id="imaging-list"></div>
+      </div>
+
       <div class="info-section" id="localisation-section" style="display:none;">
-        <h3>Localisation rubric (reference only)</h3>
+        <h3>Rubric reference</h3>
         <div id="localisation-reference"></div>
         <hr style="margin: 10px 0;">
         <div id="localisation-levels"></div>
+        <hr style="margin: 10px 0;">
+        <div id="description-rubric"></div>
+        <hr style="margin: 10px 0;">
+        <div id="diagnosis-rubric"></div>
         <div class="field-group">
           <label>Is the Localisation rubric reasonable?</label>
           <div class="radio-group-inline">
             <label><input type="radio" name="localisation-ok" value="true"> True</label>
             <label><input type="radio" name="localisation-ok" value="false"> False</label>
-            <label><input type="radio" name="localisation-ok" value="unknown" checked> Not decided</label>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Is the Description rubric reasonable?</label>
+          <div class="radio-group-inline">
+            <label><input type="radio" name="description-ok" value="true"> True</label>
+            <label><input type="radio" name="description-ok" value="false"> False</label>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Is the Diagnosis rubric reasonable?</label>
+          <div class="radio-group-inline">
+            <label><input type="radio" name="diagnosis-ok" value="true"> True</label>
+            <label><input type="radio" name="diagnosis-ok" value="false"> False</label>
           </div>
         </div>
         <div class="field-group">
@@ -346,7 +406,7 @@
       "use strict";
 
       var DATASET_ID = "eurorad_example_1";
-      var STORAGE_KEY = "eurorad_annotations_" + DATASET_ID + "_v1";
+      var STORAGE_KEY = "eurorad_annotations_" + DATASET_ID + "_v2";
 
       var cases = [];
       var currentIndex = 0;
@@ -368,16 +428,27 @@
       var btnManualLoadJson = document.getElementById("btn-manual-load-json");
 
       var diagnosticStepsSection = document.getElementById("diagnostic-steps-section");
-      var requiredNumberOriginalEl = document.getElementById("required-number-original");
       var stepsListEl = document.getElementById("steps-list");
+      var imagingSection = document.getElementById("imaging-section");
+      var imagingListEl = document.getElementById("imaging-list");
+      var caseAnnotationsSection = document.getElementById("case-annotations-section");
 
       var localisationSection = document.getElementById("localisation-section");
       var localisationReferenceEl = document.getElementById("localisation-reference");
       var localisationLevelsEl = document.getElementById("localisation-levels");
+      var descriptionRubricEl = document.getElementById("description-rubric");
+      var diagnosisRubricEl = document.getElementById("diagnosis-rubric");
 
-      var requiredNumberInput = document.getElementById("required-number-input");
+      var difficultySelect = document.getElementById("difficulty-select");
+      var raritySelect = document.getElementById("rarity-select");
+      var demographyRadioEls = document.getElementsByName("demography");
+      var discardRadioEls = document.getElementsByName("discard");
+      var redFlagInput = document.getElementById("red-flag-input");
+      var caseCommentEl = document.getElementById("case-comment");
       var localisationCommentEl = document.getElementById("localisation-comment");
       var localisationOkRadioEls = document.getElementsByName("localisation-ok");
+      var descriptionOkRadioEls = document.getElementsByName("description-ok");
+      var diagnosisOkRadioEls = document.getElementsByName("diagnosis-ok");
 
       var btnPrevCase = document.getElementById("btn-prev-case");
       var btnNextCase = document.getElementById("btn-next-case");
@@ -402,6 +473,28 @@
         return "case_" + index;
       }
 
+      function normalizeBoolean(val) {
+        if (val === true || val === false) {
+          return val;
+        }
+        if (val === "true") {
+          return true;
+        }
+        if (val === "false") {
+          return false;
+        }
+        return undefined;
+      }
+
+      function isCaseComplete(entry) {
+        return !!entry &&
+          typeof entry.localisation_rubric_ok === "boolean" &&
+          typeof entry.description_rubric_ok === "boolean" &&
+          typeof entry.diagnosis_rubric_ok === "boolean" &&
+          typeof entry.rarity === "string" &&
+          entry.rarity.trim() !== "";
+      }
+
       function loadFromLocalStorage() {
         try {
           var raw = window.localStorage.getItem(STORAGE_KEY);
@@ -409,25 +502,75 @@
           var parsed = JSON.parse(raw);
           if (parsed && parsed.answers && Array.isArray(parsed.answers)) {
             var map = {};
-            for (var i = 0; i < parsed.answers.length; i++) {
-              var a = parsed.answers[i];
-              if (a && a.case_id) {
-                var copy = {};
-                if (typeof a.required_number !== "undefined") {
-                  copy.required_number = a.required_number;
-                }
-                if (a.steps_rank) {
-                  copy.steps_rank = a.steps_rank;
-                }
-                if (typeof a.localisation_rubric_ok !== "undefined") {
-                  copy.localisation_rubric_ok = a.localisation_rubric_ok;
-                }
-                if (typeof a.localisation_comment !== "undefined") {
-                  copy.localisation_comment = a.localisation_comment;
-                }
-                map[a.case_id] = copy;
+          for (var i = 0; i < parsed.answers.length; i++) {
+            var a = parsed.answers[i];
+            if (a && a.case_id) {
+              var copy = {};
+              if (typeof a.difficulty !== "undefined") {
+                copy.difficulty = a.difficulty;
               }
+              if (typeof a.rarity !== "undefined") {
+                copy.rarity = a.rarity;
+              }
+              if (typeof a.demography !== "undefined") {
+                var demoVal = normalizeBoolean(a.demography);
+                if (typeof demoVal === "boolean") {
+                  copy.demography = demoVal;
+                }
+              }
+              if (typeof a.discard !== "undefined") {
+                var discardVal = normalizeBoolean(a.discard);
+                if (typeof discardVal === "boolean") {
+                  copy.discard = discardVal;
+                }
+              }
+              if (typeof a.red_flag_exam !== "undefined") {
+                copy.red_flag_exam = a.red_flag_exam;
+              }
+              if (typeof a.comment !== "undefined") {
+                copy.comment = a.comment;
+              }
+              if (a.steps_essential) {
+                var normalizedSteps = {};
+                for (var idx in a.steps_essential) {
+                  if (!Object.prototype.hasOwnProperty.call(a.steps_essential, idx)) continue;
+                  var boolVal = normalizeBoolean(a.steps_essential[idx]);
+                  if (typeof boolVal === "boolean") {
+                    normalizedSteps[idx] = boolVal;
+                  }
+                }
+                if (Object.keys(normalizedSteps).length > 0) {
+                  copy.steps_essential = normalizedSteps;
+                }
+              }
+              if (a.imaging_preferred_order) {
+                var normalizedOrders = {};
+                for (var ord in a.imaging_preferred_order) {
+                  if (!Object.prototype.hasOwnProperty.call(a.imaging_preferred_order, ord)) continue;
+                  var numVal = parseInt(a.imaging_preferred_order[ord], 10);
+                  if (!isNaN(numVal)) {
+                    normalizedOrders[ord] = numVal;
+                  }
+                }
+                if (Object.keys(normalizedOrders).length > 0) {
+                  copy.imaging_preferred_order = normalizedOrders;
+                }
+              }
+              if (typeof a.localisation_rubric_ok !== "undefined") {
+                copy.localisation_rubric_ok = a.localisation_rubric_ok;
+              }
+              if (typeof a.description_rubric_ok !== "undefined") {
+                copy.description_rubric_ok = a.description_rubric_ok;
+              }
+              if (typeof a.diagnosis_rubric_ok !== "undefined") {
+                copy.diagnosis_rubric_ok = a.diagnosis_rubric_ok;
+              }
+              if (typeof a.localisation_comment !== "undefined") {
+                copy.localisation_comment = a.localisation_comment;
+              }
+              map[a.case_id] = copy;
             }
+          }
             answersByCaseId = map;
           }
           if (typeof parsed.last_case_index === "number" && parsed.last_case_index >= 0) {
@@ -445,14 +588,38 @@
             if (!Object.prototype.hasOwnProperty.call(answersByCaseId, caseId)) continue;
             var entry = answersByCaseId[caseId];
             var out = { case_id: caseId };
-            if (typeof entry.required_number !== "undefined") {
-              out.required_number = entry.required_number;
+            if (typeof entry.difficulty !== "undefined") {
+              out.difficulty = entry.difficulty;
             }
-            if (entry.steps_rank) {
-              out.steps_rank = entry.steps_rank;
+            if (typeof entry.rarity !== "undefined") {
+              out.rarity = entry.rarity;
+            }
+            if (typeof entry.demography !== "undefined") {
+              out.demography = entry.demography;
+            }
+            if (typeof entry.discard !== "undefined") {
+              out.discard = entry.discard;
+            }
+            if (typeof entry.red_flag_exam !== "undefined") {
+              out.red_flag_exam = entry.red_flag_exam;
+            }
+            if (typeof entry.comment !== "undefined") {
+              out.comment = entry.comment;
+            }
+            if (entry.steps_essential) {
+              out.steps_essential = entry.steps_essential;
+            }
+            if (entry.imaging_preferred_order) {
+              out.imaging_preferred_order = entry.imaging_preferred_order;
             }
             if (typeof entry.localisation_rubric_ok !== "undefined") {
               out.localisation_rubric_ok = entry.localisation_rubric_ok;
+            }
+            if (typeof entry.description_rubric_ok !== "undefined") {
+              out.description_rubric_ok = entry.description_rubric_ok;
+            }
+            if (typeof entry.diagnosis_rubric_ok !== "undefined") {
+              out.diagnosis_rubric_ok = entry.diagnosis_rubric_ok;
             }
             if (typeof entry.localisation_comment !== "undefined") {
               out.localisation_comment = entry.localisation_comment;
@@ -522,7 +689,7 @@
           var li = items[i];
           var caseId = li.getAttribute("data-case-id");
           var answer = answersByCaseId[caseId];
-          if (answer && typeof answer.localisation_rubric_ok !== "undefined") {
+          if (isCaseComplete(answer)) {
             li.classList.add("completed");
           } else {
             li.classList.remove("completed");
@@ -545,17 +712,17 @@
       }
 
       function renderDiagnosticSteps(caseObj, caseId) {
-        diagnosticStepsSection.style.display = "block";
         var ds = caseObj.diagnostic_steps || {};
-        if (typeof ds.required_number !== "undefined" && ds.required_number !== null) {
-          requiredNumberOriginalEl.textContent = "Original required_number: " + ds.required_number;
-        } else {
-          requiredNumberOriginalEl.textContent = "Original required_number: (not specified in JSON)";
-        }
-        stepsListEl.innerHTML = "";
         var steps = (ds.steps && Array.isArray(ds.steps)) ? ds.steps : [];
+        if (!steps || steps.length === 0) {
+          diagnosticStepsSection.style.display = "none";
+          stepsListEl.innerHTML = "";
+          return;
+        }
+        diagnosticStepsSection.style.display = "block";
+        stepsListEl.innerHTML = "";
         var saved = answersByCaseId[caseId];
-        var savedRanks = (saved && saved.steps_rank) ? saved.steps_rank : {};
+        var savedEssential = (saved && saved.steps_essential) ? saved.steps_essential : {};
 
         for (var i = 0; i < steps.length; i++) {
           var step = steps[i];
@@ -582,27 +749,34 @@
             li.appendChild(reasonSpan);
           }
 
-          var rankDiv = document.createElement("div");
-          rankDiv.className = "step-rank-controls";
+          var essentialDiv = document.createElement("div");
+          essentialDiv.className = "step-rank-controls";
           var labelSpan = document.createElement("span");
           labelSpan.className = "step-rank-label";
-          labelSpan.textContent = "Rank:";
-          rankDiv.appendChild(labelSpan);
+          labelSpan.textContent = "Essential:";
+          essentialDiv.appendChild(labelSpan);
 
           var savedVal = undefined;
-          if (savedRanks && Object.prototype.hasOwnProperty.call(savedRanks, i)) {
-            savedVal = savedRanks[i];
+          var stepKeyPrimary = i + 1;
+          var stepKeyLegacy = i;
+          if (savedEssential && Object.prototype.hasOwnProperty.call(savedEssential, stepKeyPrimary)) {
+            savedVal = normalizeBoolean(savedEssential[stepKeyPrimary]);
+          } else if (savedEssential && Object.prototype.hasOwnProperty.call(savedEssential, stepKeyLegacy)) {
+            savedVal = normalizeBoolean(savedEssential[stepKeyLegacy]);
+          }
+          if (typeof savedVal === "undefined" && typeof step.essential !== "undefined" && step.essential !== "") {
+            savedVal = normalizeBoolean(step.essential);
           }
 
-          for (var val = 1; val <= 5; val++) {
+          ["true", "false"].forEach(function (val) {
             var optLabel = document.createElement("label");
             optLabel.className = "rank-option";
             var radio = document.createElement("input");
             radio.type = "radio";
-            radio.name = "step-rank-" + caseId + "-" + i;
-            radio.value = String(val);
+            radio.name = "step-essential-" + caseId + "-" + i;
+            radio.value = val;
 
-            if (savedVal === val || savedVal === String(val)) {
+            if (typeof savedVal === "boolean" && savedVal === (val === "true")) {
               radio.checked = true;
             }
 
@@ -612,61 +786,122 @@
 
             optLabel.appendChild(radio);
             optLabel.appendChild(document.createTextNode(" " + val));
-            rankDiv.appendChild(optLabel);
-          }
+            essentialDiv.appendChild(optLabel);
+          });
 
-          li.appendChild(rankDiv);
+          li.appendChild(essentialDiv);
           stepsListEl.appendChild(li);
         }
       }
 
-      function renderLocalisationRubric(caseObj) {
-        localisationSection.style.display = "block";
-        localisationReferenceEl.innerHTML = "";
-        localisationLevelsEl.innerHTML = "";
+      function renderImagingExaminations(caseObj, caseId) {
+        var exams = (caseObj.imaging_examinations && Array.isArray(caseObj.imaging_examinations)) ? caseObj.imaging_examinations : [];
+        if (!exams || exams.length === 0) {
+          imagingSection.style.display = "none";
+          imagingListEl.innerHTML = "";
+          return;
+        }
+        imagingSection.style.display = "block";
+        imagingListEl.innerHTML = "";
 
-        var rubric = caseObj.rubric_0_to_3 && caseObj.rubric_0_to_3.Localisation;
-        if (!rubric) {
-          localisationReferenceEl.textContent = "No Localisation rubric in this case JSON.";
+        var saved = answersByCaseId[caseId];
+        var savedOrders = (saved && saved.imaging_preferred_order) ? saved.imaging_preferred_order : {};
+        var maxOrder = exams.length;
+
+        for (var i = 0; i < exams.length; i++) {
+          var exam = exams[i];
+          var wrapper = document.createElement("div");
+          wrapper.className = "field-group";
+
+          var label = document.createElement("label");
+          var figureLabel = exam.figure ? exam.figure + ": " : "";
+          label.textContent = figureLabel + (exam.modality || "Imaging examination");
+          wrapper.appendChild(label);
+
+          if (exam.image_caption) {
+            var caption = document.createElement("div");
+            caption.style.fontSize = "12px";
+            caption.style.color = "#555";
+            caption.textContent = exam.image_caption;
+            wrapper.appendChild(caption);
+          }
+
+          var select = document.createElement("select");
+          select.name = "imaging-order-" + caseId + "-" + i;
+
+          var emptyOpt = document.createElement("option");
+          emptyOpt.value = "";
+          emptyOpt.textContent = "-- select order --";
+          select.appendChild(emptyOpt);
+
+          for (var order = 1; order <= maxOrder; order++) {
+            var opt = document.createElement("option");
+            opt.value = String(order);
+            opt.textContent = String(order);
+            select.appendChild(opt);
+          }
+
+          var savedVal = undefined;
+          var keyPrimary = i + 1;
+          var keyLegacy = i;
+          if (savedOrders && Object.prototype.hasOwnProperty.call(savedOrders, keyPrimary)) {
+            savedVal = savedOrders[keyPrimary];
+          } else if (savedOrders && Object.prototype.hasOwnProperty.call(savedOrders, keyLegacy)) {
+            savedVal = savedOrders[keyLegacy];
+          } else if (typeof exam.preferred_order !== "undefined" && exam.preferred_order !== "") {
+            savedVal = exam.preferred_order;
+          }
+          if (typeof savedVal !== "undefined" && savedVal !== null && savedVal !== "") {
+            select.value = String(savedVal);
+          }
+
+          select.addEventListener("change", function () {
+            updateAnswerFromForm();
+          });
+
+          wrapper.appendChild(select);
+          imagingListEl.appendChild(wrapper);
+        }
+      }
+
+      function renderGenericRubric(rubricEntry, container, titleText) {
+        container.innerHTML = "";
+        var heading = document.createElement("div");
+        heading.className = "level-row";
+        var headingLabel = document.createElement("span");
+        headingLabel.className = "level-label";
+        headingLabel.textContent = titleText + ": ";
+        heading.appendChild(headingLabel);
+        container.appendChild(heading);
+
+        if (!rubricEntry) {
+          var missing = document.createElement("div");
+          missing.textContent = "No rubric data.";
+          container.appendChild(missing);
           return;
         }
 
-        var ref = rubric.reference_answer;
-        if (ref && typeof ref === "object") {
-          var dl = document.createElement("dl");
-
-          if (typeof ref.Laterality !== "undefined") {
-            var dt1 = document.createElement("dt");
-            dt1.textContent = "Laterality:";
-            dl.appendChild(dt1);
-            var dd1 = document.createElement("dd");
-            dd1.textContent = ref.Laterality;
-            dl.appendChild(dd1);
+        if (typeof rubricEntry.reference_answer !== "undefined") {
+          var refDiv = document.createElement("div");
+          refDiv.style.margin = "4px 0";
+          var refLabel = document.createElement("span");
+          refLabel.style.fontWeight = "600";
+          refLabel.textContent = "Reference answer: ";
+          refDiv.appendChild(refLabel);
+          var refContent = document.createElement("span");
+          if (Array.isArray(rubricEntry.reference_answer)) {
+            refContent.textContent = rubricEntry.reference_answer.join(" | ");
+          } else {
+            refContent.textContent = rubricEntry.reference_answer;
           }
-          if (typeof ref["Organ/Region"] !== "undefined") {
-            var dt2 = document.createElement("dt");
-            dt2.textContent = "Organ/Region:";
-            dl.appendChild(dt2);
-            var dd2 = document.createElement("dd");
-            dd2.textContent = ref["Organ/Region"];
-            dl.appendChild(dd2);
-          }
-          if (typeof ref["Specific Substructure/Segment"] !== "undefined") {
-            var dt3 = document.createElement("dt");
-            dt3.textContent = "Specific Substructure/Segment:";
-            dl.appendChild(dt3);
-            var dd3 = document.createElement("dd");
-            dd3.textContent = ref["Specific Substructure/Segment"];
-            dl.appendChild(dd3);
-          }
-
-          localisationReferenceEl.appendChild(dl);
+          refDiv.appendChild(refContent);
+          container.appendChild(refDiv);
         }
 
         var levels = ["3", "2", "1", "0"];
         for (var i = 0; i < levels.length; i++) {
           var levelKey = levels[i];
-          if (typeof rubric[levelKey] !== "undefined") {
+          if (typeof rubricEntry[levelKey] !== "undefined") {
             var row = document.createElement("div");
             row.className = "level-row";
             var labelSpan = document.createElement("span");
@@ -674,11 +909,85 @@
             labelSpan.textContent = levelKey + " points: ";
             row.appendChild(labelSpan);
             var textSpan = document.createElement("span");
-            textSpan.textContent = rubric[levelKey];
+            textSpan.textContent = rubricEntry[levelKey];
             row.appendChild(textSpan);
-            localisationLevelsEl.appendChild(row);
+            container.appendChild(row);
           }
         }
+      }
+
+      function renderLocalisationRubric(caseObj) {
+        localisationSection.style.display = "block";
+        localisationReferenceEl.innerHTML = "";
+        localisationLevelsEl.innerHTML = "";
+        descriptionRubricEl.innerHTML = "";
+        diagnosisRubricEl.innerHTML = "";
+
+        var rubricAll = caseObj.rubric_0_to_3 || {};
+        var rubric = rubricAll && rubricAll.Localisation;
+        if (!rubric) {
+          localisationReferenceEl.textContent = "No Localisation rubric in this case JSON.";
+        } else {
+          var title = document.createElement("div");
+          title.className = "level-row";
+          var titleLabel = document.createElement("span");
+          titleLabel.className = "level-label";
+          titleLabel.textContent = "Localization rubric:";
+          title.appendChild(titleLabel);
+          localisationReferenceEl.appendChild(title);
+
+          var ref = rubric.reference_answer;
+          if (ref && typeof ref === "object") {
+            var dl = document.createElement("dl");
+
+            if (typeof ref.Laterality !== "undefined") {
+              var dt1 = document.createElement("dt");
+              dt1.textContent = "Laterality:";
+              dl.appendChild(dt1);
+              var dd1 = document.createElement("dd");
+              dd1.textContent = ref.Laterality;
+              dl.appendChild(dd1);
+            }
+            if (typeof ref["Organ/Region"] !== "undefined") {
+              var dt2 = document.createElement("dt");
+              dt2.textContent = "Organ/Region:";
+              dl.appendChild(dt2);
+              var dd2 = document.createElement("dd");
+              dd2.textContent = ref["Organ/Region"];
+              dl.appendChild(dd2);
+            }
+            if (typeof ref["Specific Substructure/Segment"] !== "undefined") {
+              var dt3 = document.createElement("dt");
+              dt3.textContent = "Specific Substructure/Segment:";
+              dl.appendChild(dt3);
+              var dd3 = document.createElement("dd");
+              dd3.textContent = ref["Specific Substructure/Segment"];
+              dl.appendChild(dd3);
+            }
+
+            localisationReferenceEl.appendChild(dl);
+          }
+
+          var levels = ["3", "2", "1", "0"];
+          for (var i = 0; i < levels.length; i++) {
+            var levelKey = levels[i];
+            if (typeof rubric[levelKey] !== "undefined") {
+              var row = document.createElement("div");
+              row.className = "level-row";
+              var labelSpan = document.createElement("span");
+              labelSpan.className = "level-label";
+              labelSpan.textContent = levelKey + " points: ";
+              row.appendChild(labelSpan);
+              var textSpan = document.createElement("span");
+              textSpan.textContent = rubric[levelKey];
+              row.appendChild(textSpan);
+              localisationLevelsEl.appendChild(row);
+            }
+          }
+        }
+
+        renderGenericRubric(rubricAll && rubricAll.Description, descriptionRubricEl, "Description rubric");
+        renderGenericRubric(rubricAll && rubricAll.Diagnosis, diagnosisRubricEl, "Diagnosis rubric");
       }
 
       function updateAnswerFromForm() {
@@ -688,40 +997,107 @@
 
         var entry = answersByCaseId[caseId] || {};
 
-        // required_number
-        var reqValRaw = requiredNumberInput.value;
-        if (reqValRaw === "") {
-          delete entry.required_number;
+        // difficulty
+        if (difficultySelect.value && difficultySelect.value !== "") {
+          entry.difficulty = difficultySelect.value;
         } else {
-          var reqNum = parseInt(reqValRaw, 10);
-          if (!isNaN(reqNum)) {
-            entry.required_number = reqNum;
-          }
+          delete entry.difficulty;
         }
 
-        // steps_rank
+        // rarity
+        if (raritySelect.value && raritySelect.value !== "") {
+          entry.rarity = raritySelect.value;
+        } else {
+          delete entry.rarity;
+        }
+
+        // demography
+        var demographyVal;
+        for (var d = 0; d < demographyRadioEls.length; d++) {
+          if (demographyRadioEls[d].checked) {
+            demographyVal = normalizeBoolean(demographyRadioEls[d].value);
+            break;
+          }
+        }
+        if (typeof demographyVal === "boolean") {
+          entry.demography = demographyVal;
+        } else {
+          delete entry.demography;
+        }
+
+        // discard
+        var discardVal;
+        for (var dis = 0; dis < discardRadioEls.length; dis++) {
+          if (discardRadioEls[dis].checked) {
+            discardVal = normalizeBoolean(discardRadioEls[dis].value);
+            break;
+          }
+        }
+        if (typeof discardVal === "boolean") {
+          entry.discard = discardVal;
+        } else {
+          delete entry.discard;
+        }
+
+        // red flag exam
+        var redFlagVal = redFlagInput.value;
+        if (redFlagVal && redFlagVal.trim() !== "") {
+          entry.red_flag_exam = redFlagVal;
+        } else {
+          delete entry.red_flag_exam;
+        }
+
+        // comment
+        var commentVal = caseCommentEl.value;
+        if (commentVal && commentVal.trim() !== "") {
+          entry.comment = commentVal;
+        } else {
+          delete entry.comment;
+        }
+
+        // steps_essential
         var ds = caseObj.diagnostic_steps || {};
         var steps = (ds.steps && Array.isArray(ds.steps)) ? ds.steps : [];
         if (steps.length > 0) {
-          var stepsRank = {};
-          for (var i = 0; i < steps.length; i++) {
-            var groupName = "step-rank-" + caseId + "-" + i;
-            var radios = stepsListEl.querySelectorAll('input[name="' + groupName + '"]');
-            for (var j = 0; j < radios.length; j++) {
-              var r = radios[j];
-              if (r.checked) {
-                var rankVal = parseInt(r.value, 10);
-                if (!isNaN(rankVal)) {
-                  stepsRank[i] = rankVal;
-                }
-                break;
+          var stepsEssential = {};
+        for (var i = 0; i < steps.length; i++) {
+          var groupName = "step-essential-" + caseId + "-" + i;
+          var radios = stepsListEl.querySelectorAll('input[name="' + groupName + '"]');
+          for (var j = 0; j < radios.length; j++) {
+            var r = radios[j];
+            if (r.checked) {
+              var boolVal = normalizeBoolean(r.value);
+              if (typeof boolVal === "boolean") {
+                stepsEssential[i + 1] = boolVal;
+              }
+              break;
+            }
+          }
+          }
+          if (Object.keys(stepsEssential).length > 0) {
+            entry.steps_essential = stepsEssential;
+          } else {
+            delete entry.steps_essential;
+          }
+        }
+
+        // imaging preferred order
+        var exams = (caseObj.imaging_examinations && Array.isArray(caseObj.imaging_examinations)) ? caseObj.imaging_examinations : [];
+        if (exams.length > 0) {
+          var preferredOrder = {};
+          for (var e = 0; e < exams.length; e++) {
+            var select = imagingListEl.querySelector('select[name="imaging-order-' + caseId + '-' + e + '"]');
+            if (select && select.value !== "") {
+              var orderVal = parseInt(select.value, 10);
+              if (!isNaN(orderVal)) {
+                preferredOrder[e + 1] = orderVal;
               }
             }
           }
-          if (Object.keys(stepsRank).length > 0) {
-            entry.steps_rank = stepsRank;
+          if (Object.keys(preferredOrder).length > 0) {
+            entry.imaging_preferred_order = preferredOrder;
           } else {
-            delete entry.steps_rank;
+            delete entry.imaging_preferred_order;
           }
         }
 
@@ -733,8 +1109,6 @@
               locValue = true;
             } else if (localisationOkRadioEls[k].value === "false") {
               locValue = false;
-            } else {
-              locValue = undefined;
             }
             break;
           }
@@ -743,6 +1117,42 @@
           entry.localisation_rubric_ok = locValue;
         } else {
           delete entry.localisation_rubric_ok;
+        }
+
+        // Description rubric OK
+        var descValue = null;
+        for (var dk = 0; dk < descriptionOkRadioEls.length; dk++) {
+          if (descriptionOkRadioEls[dk].checked) {
+            if (descriptionOkRadioEls[dk].value === "true") {
+              descValue = true;
+            } else if (descriptionOkRadioEls[dk].value === "false") {
+              descValue = false;
+            }
+            break;
+          }
+        }
+        if (typeof descValue === "boolean") {
+          entry.description_rubric_ok = descValue;
+        } else {
+          delete entry.description_rubric_ok;
+        }
+
+        // Diagnosis rubric OK
+        var diagValue = null;
+        for (var gk = 0; gk < diagnosisOkRadioEls.length; gk++) {
+          if (diagnosisOkRadioEls[gk].checked) {
+            if (diagnosisOkRadioEls[gk].value === "true") {
+              diagValue = true;
+            } else if (diagnosisOkRadioEls[gk].value === "false") {
+              diagValue = false;
+            }
+            break;
+          }
+        }
+        if (typeof diagValue === "boolean") {
+          entry.diagnosis_rubric_ok = diagValue;
+        } else {
+          delete entry.diagnosis_rubric_ok;
         }
 
         // Comment
@@ -782,24 +1192,97 @@
         loadStatusEl.textContent = "";
 
         renderDiagnosticSteps(caseObj, caseId);
+        renderImagingExaminations(caseObj, caseId);
         renderLocalisationRubric(caseObj);
+        caseAnnotationsSection.style.display = "block";
 
         var saved = answersByCaseId[caseId];
 
-        // restore required_number
-        if (saved && typeof saved.required_number !== "undefined") {
-          requiredNumberInput.value = saved.required_number;
+        // restore difficulty
+        var difficultyVal = "";
+        if (saved && typeof saved.difficulty !== "undefined") {
+          difficultyVal = saved.difficulty;
+        } else if (typeof caseObj.difficulty !== "undefined") {
+          difficultyVal = caseObj.difficulty || "";
+        }
+        difficultySelect.value = difficultyVal || "";
+
+        // restore rarity
+        var rarityVal = "";
+        if (saved && typeof saved.rarity !== "undefined") {
+          rarityVal = saved.rarity;
+        } else if (typeof caseObj.rarity !== "undefined") {
+          rarityVal = caseObj.rarity || "";
+        }
+        raritySelect.value = rarityVal || "";
+
+        // restore demography
+        var demoVal = undefined;
+        if (saved && typeof saved.demography !== "undefined") {
+          demoVal = saved.demography;
+        } else if (typeof caseObj.demography !== "undefined" && caseObj.demography !== "") {
+          demoVal = normalizeBoolean(caseObj.demography);
+        }
+        for (var dr = 0; dr < demographyRadioEls.length; dr++) {
+          demographyRadioEls[dr].checked = (typeof demoVal === "boolean" && demographyRadioEls[dr].value === (demoVal ? "true" : "false"));
+        }
+
+        // restore discard
+        var discardVal = undefined;
+        if (saved && typeof saved.discard !== "undefined") {
+          discardVal = saved.discard;
+        } else if (typeof caseObj.discard !== "undefined" && caseObj.discard !== "") {
+          discardVal = normalizeBoolean(caseObj.discard);
+        }
+        for (var dis = 0; dis < discardRadioEls.length; dis++) {
+          discardRadioEls[dis].checked = (typeof discardVal === "boolean" && discardRadioEls[dis].value === (discardVal ? "true" : "false"));
+        }
+
+        // restore red flag exam
+        if (saved && typeof saved.red_flag_exam !== "undefined") {
+          redFlagInput.value = saved.red_flag_exam;
+        } else if (typeof caseObj.red_flag_exam !== "undefined") {
+          redFlagInput.value = caseObj.red_flag_exam || "";
         } else {
-          requiredNumberInput.value = "";
+          redFlagInput.value = "";
+        }
+
+        // restore comment
+        if (saved && typeof saved.comment !== "undefined") {
+          caseCommentEl.value = saved.comment;
+        } else if (typeof caseObj.comment !== "undefined") {
+          caseCommentEl.value = caseObj.comment || "";
+        } else {
+          caseCommentEl.value = "";
         }
 
         // restore localisation radio + comment
-        var selectedValue = "unknown";
-        if (saved && typeof saved.localisation_rubric_ok !== "undefined") {
-          selectedValue = saved.localisation_rubric_ok ? "true" : "false";
-        }
         for (var r = 0; r < localisationOkRadioEls.length; r++) {
-          localisationOkRadioEls[r].checked = (localisationOkRadioEls[r].value === selectedValue);
+          localisationOkRadioEls[r].checked = false;
+        }
+        if (saved && typeof saved.localisation_rubric_ok !== "undefined") {
+          var selectedValue = saved.localisation_rubric_ok ? "true" : "false";
+          for (var lr = 0; lr < localisationOkRadioEls.length; lr++) {
+            localisationOkRadioEls[lr].checked = (localisationOkRadioEls[lr].value === selectedValue);
+          }
+        }
+        for (var rd = 0; rd < descriptionOkRadioEls.length; rd++) {
+          descriptionOkRadioEls[rd].checked = false;
+        }
+        if (saved && typeof saved.description_rubric_ok !== "undefined") {
+          var selectedDescriptionValue = saved.description_rubric_ok ? "true" : "false";
+          for (var rdr = 0; rdr < descriptionOkRadioEls.length; rdr++) {
+            descriptionOkRadioEls[rdr].checked = (descriptionOkRadioEls[rdr].value === selectedDescriptionValue);
+          }
+        }
+        for (var rg = 0; rg < diagnosisOkRadioEls.length; rg++) {
+          diagnosisOkRadioEls[rg].checked = false;
+        }
+        if (saved && typeof saved.diagnosis_rubric_ok !== "undefined") {
+          var selectedDiagnosisValue = saved.diagnosis_rubric_ok ? "true" : "false";
+          for (var dgr = 0; dgr < diagnosisOkRadioEls.length; dgr++) {
+            diagnosisOkRadioEls[dgr].checked = (diagnosisOkRadioEls[dgr].value === selectedDiagnosisValue);
+          }
         }
         if (saved && typeof saved.localisation_comment !== "undefined") {
           localisationCommentEl.value = saved.localisation_comment;
@@ -852,18 +1335,40 @@
           if (!Object.prototype.hasOwnProperty.call(answersByCaseId, caseId)) continue;
           var entry = answersByCaseId[caseId];
           var out = { case_id: caseId };
-          if (typeof entry.required_number !== "undefined") {
-            out.required_number = entry.required_number;
+          if (typeof entry.difficulty !== "undefined") {
+            out.difficulty = entry.difficulty;
           }
-          if (entry.steps_rank) {
-            out.steps_rank = entry.steps_rank;
+          if (typeof entry.demography !== "undefined") {
+            out.demography = entry.demography;
+          }
+          if (typeof entry.discard !== "undefined") {
+            out.discard = entry.discard;
+          }
+          if (typeof entry.red_flag_exam !== "undefined") {
+            out.red_flag_exam = entry.red_flag_exam;
+          }
+          if (typeof entry.comment !== "undefined") {
+            out.comment = entry.comment;
+          }
+          if (entry.steps_essential) {
+            out.steps_essential = entry.steps_essential;
+          }
+          if (entry.imaging_preferred_order) {
+            out.imaging_preferred_order = entry.imaging_preferred_order;
           }
           if (typeof entry.localisation_rubric_ok !== "undefined") {
             out.localisation_rubric_ok = entry.localisation_rubric_ok;
           }
+          if (typeof entry.description_rubric_ok !== "undefined") {
+            out.description_rubric_ok = entry.description_rubric_ok;
+          }
+          if (typeof entry.diagnosis_rubric_ok !== "undefined") {
+            out.diagnosis_rubric_ok = entry.diagnosis_rubric_ok;
+          }
           if (typeof entry.localisation_comment !== "undefined") {
             out.localisation_comment = entry.localisation_comment;
           }
+          out.complete = isCaseComplete(entry);
           answersArray.push(out);
         }
 
@@ -962,23 +1467,47 @@
           var caseObj = cases[currentIndex];
           var caseId = extractCaseId(caseObj.case_url, currentIndex);
 
-          // reset required_number input
-          requiredNumberInput.value = "";
-
-          // reset step ranks for current case
+          // reset step essentials for current case
           var ds = caseObj.diagnostic_steps || {};
           var steps = (ds.steps && Array.isArray(ds.steps)) ? ds.steps : [];
           for (var i = 0; i < steps.length; i++) {
-            var groupName = "step-rank-" + caseId + "-" + i;
+            var groupName = "step-essential-" + caseId + "-" + i;
             var radios = stepsListEl.querySelectorAll('input[name="' + groupName + '"]');
             for (var j = 0; j < radios.length; j++) {
               radios[j].checked = false;
             }
           }
 
+          // reset imaging preferred order
+          var exams = (caseObj.imaging_examinations && Array.isArray(caseObj.imaging_examinations)) ? caseObj.imaging_examinations : [];
+          for (var e = 0; e < exams.length; e++) {
+            var select = imagingListEl.querySelector('select[name="imaging-order-' + caseId + '-' + e + '"]');
+            if (select) {
+              select.value = "";
+            }
+          }
+
+          // reset case-level annotations
+          difficultySelect.value = "";
+          raritySelect.value = "";
+          for (var d = 0; d < demographyRadioEls.length; d++) {
+            demographyRadioEls[d].checked = false;
+          }
+          for (var dis = 0; dis < discardRadioEls.length; dis++) {
+            discardRadioEls[dis].checked = false;
+          }
+          redFlagInput.value = "";
+          caseCommentEl.value = "";
+
           // reset localisation radios and comment
           for (var k = 0; k < localisationOkRadioEls.length; k++) {
-            localisationOkRadioEls[k].checked = (localisationOkRadioEls[k].value === "unknown");
+            localisationOkRadioEls[k].checked = false;
+          }
+          for (var dk = 0; dk < descriptionOkRadioEls.length; dk++) {
+            descriptionOkRadioEls[dk].checked = false;
+          }
+          for (var gk = 0; gk < diagnosisOkRadioEls.length; gk++) {
+            diagnosisOkRadioEls[gk].checked = false;
           }
           localisationCommentEl.value = "";
 
@@ -1015,16 +1544,48 @@
           clearMemory();
         });
 
-        requiredNumberInput.addEventListener("change", function () {
+        difficultySelect.addEventListener("change", function () {
           updateAnswerFromForm();
         });
-
+        raritySelect.addEventListener("change", function () {
+          updateAnswerFromForm();
+        });
+        redFlagInput.addEventListener("input", function () {
+          updateAnswerFromForm();
+        });
+        caseCommentEl.addEventListener("input", function () {
+          updateAnswerFromForm();
+        });
         localisationCommentEl.addEventListener("input", function () {
           updateAnswerFromForm();
         });
 
         for (var r = 0; r < localisationOkRadioEls.length; r++) {
           localisationOkRadioEls[r].addEventListener("change", function () {
+            updateAnswerFromForm();
+          });
+        }
+
+        for (var d = 0; d < demographyRadioEls.length; d++) {
+          demographyRadioEls[d].addEventListener("change", function () {
+            updateAnswerFromForm();
+          });
+        }
+
+        for (var dis = 0; dis < discardRadioEls.length; dis++) {
+          discardRadioEls[dis].addEventListener("change", function () {
+            updateAnswerFromForm();
+          });
+        }
+
+        for (var dr = 0; dr < descriptionOkRadioEls.length; dr++) {
+          descriptionOkRadioEls[dr].addEventListener("change", function () {
+            updateAnswerFromForm();
+          });
+        }
+
+        for (var dg = 0; dg < diagnosisOkRadioEls.length; dg++) {
+          diagnosisOkRadioEls[dg].addEventListener("change", function () {
             updateAnswerFromForm();
           });
         }
