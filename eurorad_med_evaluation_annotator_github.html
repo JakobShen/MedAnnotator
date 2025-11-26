@@ -283,6 +283,7 @@
       <button id="btn-prev-case">Previous case</button>
       <button id="btn-next-case">Next case</button>
       <button id="btn-open-eurorad" class="primary">Open Eurorad</button>
+      <button id="btn-import-json">Load saved JSON</button>
       <button id="btn-export-json">Export JSON</button>
       <button id="btn-clear-memory">Clear memory</button>
       <span id="autosave-status"></span>
@@ -304,6 +305,7 @@
         <div id="manual-load-container">
           <p>You are running this tool from a web server (e.g. GitHub Pages). Please click the button below to select your local dataset JSON file (for example, <strong>example_1_items_simplified.json</strong>):</p>
           <button id="btn-manual-load-json">Choose JSON file...</button>
+          <p style="margin-bottom:0;">After the dataset is loaded, you can restore your previous annotations via the “Load saved JSON” button in the header.</p>
           <div id="json-load-warning"></div>
         </div>
       </div>
@@ -389,6 +391,7 @@
   </main>
 
   <input type="file" id="jsonFileInput" accept=".json,application/json" style="display:none;" />
+  <input type="file" id="answersFileInput" accept=".json,application/json" style="display:none;" />
 
   <script>
     (function () {
@@ -404,6 +407,7 @@
       var autosaveInterval = 5000;
       var autosaveTimerStarted = false;
       var dirty = false;
+      var skipFormUpdateOnce = false;
 
       // DOM elements
       var headerCaseCounter = document.getElementById("header-case-counter");
@@ -443,9 +447,11 @@
       var btnPrevCase = document.getElementById("btn-prev-case");
       var btnNextCase = document.getElementById("btn-next-case");
       var btnOpenEurorad = document.getElementById("btn-open-eurorad");
+      var btnImportJson = document.getElementById("btn-import-json");
       var btnExportJson = document.getElementById("btn-export-json");
       var btnClearMemory = document.getElementById("btn-clear-memory");
       var jsonFileInput = document.getElementById("jsonFileInput");
+      var answersFileInput = document.getElementById("answersFileInput");
 
       function formatTime(date) {
         function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -752,6 +758,44 @@
           console.error("Failed to write to localStorage:", e);
           autosaveStatus.textContent = "Auto-save failed (please check browser settings).";
         }
+      }
+
+      function applyImportedAnswers(parsed, sourceName) {
+        if (!parsed || !Array.isArray(parsed.answers)) {
+          alert("The selected JSON does not contain an answers array exported by this tool.");
+          return;
+        }
+
+        var payloadForStorage = {
+          dataset_id: parsed.dataset_id || DATASET_ID,
+          answers: parsed.answers,
+          last_case_index: (typeof parsed.last_case_index === "number" && parsed.last_case_index >= 0) ? parsed.last_case_index : currentIndex
+        };
+
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payloadForStorage));
+        } catch (e) {
+          console.warn("Failed to persist imported answers to localStorage:", e);
+        }
+
+        loadFromLocalStorage();
+
+        if (cases && cases.length > 0) {
+          if (currentIndex < 0 || currentIndex >= cases.length) {
+            currentIndex = 0;
+          }
+          skipFormUpdateOnce = true;
+          switchCase(currentIndex, false);
+        }
+
+        try {
+          saveToLocalStorage();
+        } catch (e) {
+          console.error("Failed to re-save imported answers:", e);
+        }
+        dirty = false;
+        loadStatusEl.textContent = "Loaded saved annotations from " + (sourceName || "JSON") + ".";
+        autosaveStatus.textContent = "Loaded saved annotations at " + formatTime(new Date());
       }
 
       function markDirty() {
@@ -1397,12 +1441,19 @@
       }
 
       function switchCase(newIndex, openEuroradToo) {
-        if (!cases || cases.length === 0) return;
-        if (newIndex < 0 || newIndex >= cases.length) return;
+        if (!cases || cases.length === 0) {
+          skipFormUpdateOnce = false;
+          return;
+        }
+        if (newIndex < 0 || newIndex >= cases.length) {
+          skipFormUpdateOnce = false;
+          return;
+        }
 
-        if (cases.length > 0) {
+        if (!skipFormUpdateOnce && cases.length > 0) {
           updateAnswerFromForm();
         }
+        skipFormUpdateOnce = false;
 
         currentIndex = newIndex;
 
@@ -1553,6 +1604,9 @@
           if (typeof entry.difficulty !== "undefined") {
             out.difficulty = entry.difficulty;
           }
+          if (typeof entry.rarity !== "undefined") {
+            out.rarity = entry.rarity;
+          }
           if (typeof entry.discard !== "undefined") {
             out.discard = entry.discard;
           }
@@ -1669,6 +1723,37 @@
         reader.readAsText(file, "utf-8");
       }
 
+      function handleSavedJsonFile(file) {
+        if (!file) return;
+        if (!cases || cases.length === 0) {
+          alert("Please load the case index JSON first, then import saved annotations.");
+          return;
+        }
+        if (!/\.json$/i.test(file.name)) {
+          alert("Please choose a .json file.");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (evt) {
+          try {
+            var text = evt.target.result;
+            var data = JSON.parse(text);
+            if (data && data.dataset_id && data.dataset_id !== DATASET_ID) {
+              var proceed = confirm("Dataset ID in the file (" + data.dataset_id + ") does not match the current dataset (" + DATASET_ID + "). Continue loading?");
+              if (!proceed) return;
+            }
+            applyImportedAnswers(data, file.name);
+          } catch (e) {
+            console.error("Failed to parse saved JSON:", e);
+            alert("Failed to parse saved JSON. Please ensure it was exported from this tool.");
+          }
+        };
+        reader.onerror = function () {
+          alert("Failed to read the file.");
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
       function clearMemory() {
         if (!confirm("This will clear all saved answers in this browser for this dataset. Continue?")) {
           return;
@@ -1766,6 +1851,15 @@
           openEuroradForCurrentCase();
         });
 
+        btnImportJson.addEventListener("click", function () {
+          if (!cases || cases.length === 0) {
+            alert("Please load the case index JSON first.");
+            return;
+          }
+          answersFileInput.value = "";
+          answersFileInput.click();
+        });
+
         btnExportJson.addEventListener("click", function () {
           exportJson();
         });
@@ -1819,6 +1913,11 @@
         jsonFileInput.addEventListener("change", function (evt) {
           var file = evt.target.files && evt.target.files[0];
           handleManualJsonFile(file);
+        });
+
+        answersFileInput.addEventListener("change", function (evt) {
+          var file = evt.target.files && evt.target.files[0];
+          handleSavedJsonFile(file);
         });
       }
 
