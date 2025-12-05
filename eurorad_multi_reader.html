@@ -1,0 +1,2681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Med Evaluation Multi-Reader</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: #f5f5f7;
+      color: #111827;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background-color: #1f2933;
+      color: #f9fafb;
+      font-size: 13px;
+    }
+    .header-left, .header-right {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-right: 16px;
+    }
+    .header-counter {
+      margin-right: 10px;
+      opacity: 0.9;
+    }
+    .header-right button {
+      margin-left: 6px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+    main {
+      flex: 1 1 auto;
+      display: flex;
+      min-height: 0;
+    }
+    aside {
+      flex: 0 0 260px;
+      max-width: 320px;
+      border-right: 1px solid #e5e7eb;
+      background-color: #ffffff;
+      overflow-y: auto;
+      padding: 8px;
+      font-size: 13px;
+    }
+    #case-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .case-item {
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      font-size: 13px;
+    }
+    .case-item:hover {
+      background-color: #f0f4ff;
+    }
+    .case-item.active {
+      background-color: #e0ebff;
+      font-weight: 600;
+    }
+    .case-item .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      background-color: #d1d5db;
+      flex-shrink: 0;
+    }
+    .case-item.completed .status-dot {
+      background-color: #22c55e;
+    }
+    .case-item-title {
+      flex: 1 1 auto;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    section#case-detail-panel {
+      flex: 1 1 auto;
+      padding: 12px 16px 40px 16px;
+      overflow-y: auto;
+      position: relative;
+    }
+    #case-title {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+    }
+    #case-url {
+      font-size: 13px;
+      word-break: break-all;
+    }
+    #case-index-line {
+      font-size: 13px;
+      color: #4b5563;
+    }
+    #load-status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+    button {
+      padding: 5px 9px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background-color: #e5e7eb;
+      color: #111827;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #d1d5db;
+    }
+    button.primary {
+      background-color: #2563eb;
+      border-color: #1d4ed8;
+      color: #f9fafb;
+    }
+    button.primary:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    #autosave-status {
+      font-size: 11px;
+      color: #e5e7eb;
+      margin-left: 10px;
+    }
+    .info-section {
+      margin-top: 12px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      padding: 12px 14px;
+      font-size: 13px;
+    }
+    .info-section h3 {
+      margin-top: 0;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    .info-section p {
+      margin: 3px 0;
+    }
+    .doctor-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .doctor-pill {
+      border-radius: 999px;
+      padding: 2px 8px;
+      background-color: #e5e7eb;
+      border: 1px solid #cbd5e1;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .doctor-pill:hover {
+      background-color: #d1d5db;
+    }
+    .doctor-pill .source {
+      opacity: 0.6;
+      margin-left: 4px;
+      font-size: 11px;
+    }
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .matrix-table th,
+    .matrix-table td {
+      padding: 4px 6px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+    }
+    .matrix-table th {
+      text-align: left;
+      background-color: #f9fafb;
+      font-weight: 600;
+    }
+    .matrix-table td.field-label {
+      font-weight: 600;
+      width: 190px;
+    }
+    .matrix-table td.doctor-cell {
+      max-width: 150px;
+      word-break: break-word;
+    }
+    .matrix-table td.comment-cell {
+      max-width: 220px;
+    }
+    .matrix-table td.meta-cell {
+      background-color: #fefce8;
+      min-width: 150px;
+    }
+    .matrix-table select,
+    .matrix-table textarea {
+      width: 100%;
+      font-size: 12px;
+      padding: 3px 4px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      box-sizing: border-box;
+    }
+    .matrix-table textarea {
+      resize: vertical;
+    }
+    .diff-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background-color: #d1d5db;
+      display: inline-block;
+    }
+    .diff-dot.has-diff {
+      background-color: #ef4444;
+    }
+    .chip {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid #d1d5db;
+      white-space: nowrap;
+    }
+    .chip-essential {
+      background-color: #dcfce7;
+      border-color: #22c55e;
+    }
+    .chip-optional {
+      background-color: #eff6ff;
+      border-color: #3b82f6;
+    }
+    .chip-unnecessary {
+      background-color: #fee2e2;
+      border-color: #ef4444;
+    }
+    .exam-block {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 10px;
+      background-color: #f9fafb;
+    }
+    .exam-header {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .exam-subtitle {
+      font-size: 12px;
+      color: #4b5563;
+      margin-top: 1px;
+      margin-bottom: 4px;
+    }
+    .exam-metainfo {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .exam-matrix {
+      margin-top: 6px;
+    }
+    .level-row {
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .level-label {
+      font-weight: 600;
+      margin-right: 4px;
+    }
+    @media (max-width: 900px) {
+      aside {
+        flex: 0 0 210px;
+      }
+    }
+    @media (max-width: 700px) {
+      main {
+        flex-direction: column;
+      }
+      aside {
+        flex: 0 0 auto;
+        max-height: 190px;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      section#case-detail-panel {
+        padding-bottom: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <span class="header-title">Med Evaluation Multi-Reader</span>
+      <span class="header-counter" id="header-case-counter">No dataset loaded</span>
+      <span class="header-counter" id="header-doctor-counter">0 doctors loaded</span>
+    </div>
+    <div class="header-right">
+      <button id="btn-prev-case">Previous case</button>
+      <button id="btn-next-case">Next case</button>
+      <button id="btn-open-eurorad" class="primary">Open Eurorad</button>
+      <button id="btn-load-dataset">Load questions JSON</button>
+      <button id="btn-add-results">Add result JSON(s)</button>
+      <button id="btn-export-majority">Export majority JSON</button>
+      <button id="btn-export-meta">Export meta JSON</button>
+      <button id="btn-clear-meta">Clear meta memory</button>
+      <span id="autosave-status"></span>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <h3 style="margin: 4px 0 8px 4px; font-size: 14px;">Case list</h3>
+      <ul id="case-list"></ul>
+    </aside>
+
+    <section id="case-detail-panel">
+      <div class="info-section" id="case-info">
+        <h2 id="case-title">Please load questions JSON and at least one result JSON.</h2>
+        <p>URL:
+          <a id="case-url" href="#" target="_blank" rel="noopener noreferrer"></a>
+        </p>
+        <p id="case-index-line"></p>
+        <p>Dataset: <span id="dataset-id-value">—</span></p>
+        <div id="doctor-summary">
+          <p style="margin-top:6px; margin-bottom:2px;"><strong>Loaded doctors:</strong></p>
+          <div id="doctor-pills" class="doctor-pills"></div>
+          <p id="doctor-summary-hint" style="font-size:11px; color:#6b7280; margin-top:4px;">
+            Click a pill to rename a doctor. Default names are Doc A, Doc B, ...
+          </p>
+        </div>
+        <p id="load-status" style="margin-top:8px;">
+          Step 1: Load questions JSON. Step 2: Load 1–N result JSON files (one per doctor). A red dot marks disagreement between doctors; the green dot in the case list means all meta fields (except comments) are filled.
+        </p>
+      </div>
+
+      <div class="info-section" id="global-section" style="display:none;">
+        <h3>Global ratings (per case)</h3>
+        <div id="global-table-container"></div>
+      </div>
+
+      <div class="info-section" id="steps-section" style="display:none;">
+        <h3>Diagnostic steps (importance)</h3>
+        <div id="steps-table-container"></div>
+      </div>
+
+      <div class="info-section" id="imaging-section" style="display:none;">
+        <h3>Imaging examinations (preferred order &amp; meta info)</h3>
+        <div id="imaging-container"></div>
+      </div>
+
+      <div class="info-section" id="rubric-eval-section" style="display:none;">
+        <h3>Rubric evaluation (rubric reference results)</h3>
+        <div id="rubric-eval-container"></div>
+      </div>
+
+      <div class="info-section" id="rubric-ref-section" style="display:none;">
+        <h3>Rubric reference</h3>
+        <div id="rubric-ref-localisation"></div>
+        <hr style="margin: 10px 0;">
+        <div id="rubric-ref-description"></div>
+        <hr style="margin: 10px 0;">
+        <div id="rubric-ref-diagnosis"></div>
+      </div>
+    </section>
+  </main>
+
+  <input type="file" id="datasetFileInput" accept=".json,application/json" style="display:none;" />
+  <input type="file" id="resultsFileInput" accept=".json,application/json" style="display:none;" multiple />
+
+  <script>
+    (function () {
+      "use strict";
+
+      var cases = [];
+      var doctors = [];
+      var currentCaseIndex = 0;
+      var datasetId = null;
+
+      var metaByCaseId = {};
+      var metaLoadedFromStorage = false;
+      var autosaveInterval = 5000;
+      var autosaveTimerStarted = false;
+      var dirtyMeta = false;
+      var euroradWindow = null;
+
+      // DOM elements
+      var caseListEl = document.getElementById("case-list");
+      var caseTitleEl = document.getElementById("case-title");
+      var caseUrlEl = document.getElementById("case-url");
+      var caseIndexLineEl = document.getElementById("case-index-line");
+      var datasetIdValueEl = document.getElementById("dataset-id-value");
+      var headerCaseCounterEl = document.getElementById("header-case-counter");
+      var headerDoctorCounterEl = document.getElementById("header-doctor-counter");
+      var doctorPillsEl = document.getElementById("doctor-pills");
+      var loadStatusEl = document.getElementById("load-status");
+      var autosaveStatusEl = document.getElementById("autosave-status");
+
+      var globalSection = document.getElementById("global-section");
+      var stepsSection = document.getElementById("steps-section");
+      var imagingSection = document.getElementById("imaging-section");
+      var rubricEvalSection = document.getElementById("rubric-eval-section");
+      var rubricRefSection = document.getElementById("rubric-ref-section");
+
+      var globalTableContainer = document.getElementById("global-table-container");
+      var stepsTableContainer = document.getElementById("steps-table-container");
+      var imagingContainer = document.getElementById("imaging-container");
+      var rubricEvalContainer = document.getElementById("rubric-eval-container");
+      var rubricRefLocalisationEl = document.getElementById("rubric-ref-localisation");
+      var rubricRefDescriptionEl = document.getElementById("rubric-ref-description");
+      var rubricRefDiagnosisEl = document.getElementById("rubric-ref-diagnosis");
+
+      var btnPrevCase = document.getElementById("btn-prev-case");
+      var btnNextCase = document.getElementById("btn-next-case");
+      var btnOpenEurorad = document.getElementById("btn-open-eurorad");
+      var btnLoadDataset = document.getElementById("btn-load-dataset");
+      var btnAddResults = document.getElementById("btn-add-results");
+      var btnExportMajority = document.getElementById("btn-export-majority");
+      var btnExportMeta = document.getElementById("btn-export-meta");
+      var btnClearMeta = document.getElementById("btn-clear-meta");
+
+      var datasetFileInput = document.getElementById("datasetFileInput");
+      var resultsFileInput = document.getElementById("resultsFileInput");
+
+      function formatTime(date) {
+        function pad(n) { return n < 10 ? "0" + n : "" + n; }
+        return pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+      }
+
+      function extractCaseId(caseUrl, index) {
+        if (typeof caseUrl === "string" && caseUrl.length > 0) {
+          var match = caseUrl.match(/(\d+)(?:\/)?$/);
+          if (match && match[1]) {
+            return match[1];
+          }
+          return caseUrl;
+        }
+        return "case_" + index;
+      }
+
+      function normalizeBoolean(val) {
+        if (val === true || val === false) {
+          return val;
+        }
+        if (typeof val === "string") {
+          var lower = val.toLowerCase();
+          if (lower === "true") return true;
+          if (lower === "false") return false;
+        }
+        return undefined;
+      }
+
+      function normalizeStepPriority(val) {
+        if (typeof val === "string") {
+          var lower = val.toLowerCase();
+          if (lower === "essential" || lower === "optional" || lower === "unnecessary") {
+            return lower;
+          }
+          if (lower === "true" || lower === "yes") {
+            return "essential";
+          }
+          if (lower === "false" || lower === "no") {
+            return "unnecessary";
+          }
+        }
+        if (val === true) return "essential";
+        if (val === false) return "unnecessary";
+        return undefined;
+      }
+
+      function formatMetaInfoText(meta) {
+        if (!meta) return "No meta info provided.";
+        if (typeof meta === "string") return meta;
+        if (typeof meta !== "object") return String(meta);
+        var parts = [];
+        if (meta.modality) parts.push("Modality: " + meta.modality);
+        if (meta.acquisition) parts.push("Acquisition: " + meta.acquisition);
+        if (meta.imaged_region) parts.push("Region: " + meta.imaged_region);
+        if (meta.body_part) parts.push("Body part: " + meta.body_part);
+        return parts.length > 0 ? parts.join(" | ") : "No meta info provided.";
+      }
+
+      function markMetaDirty() {
+        dirtyMeta = true;
+      }
+
+      function autoSaveTick() {
+        if (!dirtyMeta) return;
+        saveMetaToLocalStorage();
+        dirtyMeta = false;
+      }
+
+      function getMetaStorageKey() {
+        if (!datasetId) return null;
+        return "eurorad_multi_meta_" + datasetId;
+      }
+
+      function saveMetaToLocalStorage() {
+        var key = getMetaStorageKey();
+        if (!key) return;
+        try {
+          var payload = {
+            dataset_id: datasetId,
+            metaByCaseId: metaByCaseId,
+            last_case_index: currentCaseIndex,
+            last_updated: new Date().toISOString()
+          };
+          window.localStorage.setItem(key, JSON.stringify(payload));
+          autosaveStatusEl.textContent = "Meta auto-saved at " + formatTime(new Date());
+        } catch (e) {
+          console.error("Failed to save meta to localStorage:", e);
+          autosaveStatusEl.textContent = "Meta auto-save failed.";
+        }
+      }
+
+      function maybeLoadMetaFromLocalStorage() {
+        if (metaLoadedFromStorage) return;
+        var key = getMetaStorageKey();
+        if (!key) return;
+        try {
+          var raw = window.localStorage.getItem(key);
+          if (!raw) {
+            metaLoadedFromStorage = true;
+            return;
+          }
+          var data = JSON.parse(raw);
+          if (data && data.metaByCaseId && typeof data.metaByCaseId === "object") {
+            metaByCaseId = data.metaByCaseId;
+          }
+          if (typeof data.last_case_index === "number" &&
+              data.last_case_index >= 0 &&
+              cases.length > 0 &&
+              data.last_case_index < cases.length) {
+            currentCaseIndex = data.last_case_index;
+          }
+          metaLoadedFromStorage = true;
+          loadStatusEl.textContent = "Restored meta annotations from browser memory.";
+        } catch (e) {
+          console.error("Failed to load meta from localStorage:", e);
+          metaLoadedFromStorage = true;
+        }
+      }
+
+      function clearMetaMemory() {
+        if (!confirm("This will clear meta annotations stored in this browser for the current dataset. Continue?")) {
+          return;
+        }
+        var key = getMetaStorageKey();
+        if (key) {
+          try {
+            window.localStorage.removeItem(key);
+          } catch (e) {
+            console.error("Failed to clear meta from localStorage:", e);
+          }
+        }
+        metaByCaseId = {};
+        dirtyMeta = false;
+        autosaveStatusEl.textContent = "Meta memory cleared at " + formatTime(new Date());
+        if (cases.length && caseListEl.children.length) {
+          switchCase(currentCaseIndex, false);
+        }
+      }
+
+      function normalizeAnswerEntry(a) {
+        var copy = {};
+        if (typeof a.difficulty !== "undefined") {
+          copy.difficulty = a.difficulty;
+        }
+        if (typeof a.rarity !== "undefined") {
+          copy.rarity = a.rarity;
+        }
+        if (typeof a.discard !== "undefined") {
+          var d = normalizeBoolean(a.discard);
+          if (typeof d === "boolean") {
+            copy.discard = d;
+          }
+        }
+        if (typeof a.red_flag_exam !== "undefined") {
+          copy.red_flag_exam = a.red_flag_exam;
+        }
+        if (typeof a.comment !== "undefined") {
+          copy.comment = a.comment;
+        }
+        if (a.steps_essential) {
+          var normalizedSteps = {};
+          for (var key in a.steps_essential) {
+            if (!Object.prototype.hasOwnProperty.call(a.steps_essential, key)) continue;
+            var priorityVal = normalizeStepPriority(a.steps_essential[key]);
+            if (priorityVal) {
+              normalizedSteps[key] = priorityVal;
+            }
+          }
+          if (Object.keys(normalizedSteps).length > 0) {
+            copy.steps_essential = normalizedSteps;
+          }
+        }
+        if (a.imaging_preferred_order) {
+          var normalizedOrders = {};
+          for (var ord in a.imaging_preferred_order) {
+            if (!Object.prototype.hasOwnProperty.call(a.imaging_preferred_order, ord)) continue;
+            var numVal = parseInt(a.imaging_preferred_order[ord], 10);
+            if (!isNaN(numVal)) {
+              normalizedOrders[ord] = numVal;
+            }
+          }
+          if (Object.keys(normalizedOrders).length > 0) {
+            copy.imaging_preferred_order = normalizedOrders;
+          }
+        }
+        if (a.imaging_meta_info_comment) {
+          var normalizedMetaComments = {};
+          for (var cKey in a.imaging_meta_info_comment) {
+            if (!Object.prototype.hasOwnProperty.call(a.imaging_meta_info_comment, cKey)) continue;
+            var parsedCKey = parseInt(cKey, 10);
+            var finalCKey = isNaN(parsedCKey) ? cKey : parsedCKey;
+            if (typeof a.imaging_meta_info_comment[cKey] === "string") {
+              normalizedMetaComments[finalCKey] = a.imaging_meta_info_comment[cKey];
+            }
+          }
+          if (Object.keys(normalizedMetaComments).length > 0) {
+            copy.imaging_meta_info_comment = normalizedMetaComments;
+          }
+        }
+        if (a.imaging_meta_info_ok) {
+          var normalizedMeta = {};
+          for (var metaKey in a.imaging_meta_info_ok) {
+            if (!Object.prototype.hasOwnProperty.call(a.imaging_meta_info_ok, metaKey)) continue;
+            var boolVal = normalizeBoolean(a.imaging_meta_info_ok[metaKey]);
+            var parsedKey = parseInt(metaKey, 10);
+            var finalKey = isNaN(parsedKey) ? metaKey : parsedKey;
+            if (typeof boolVal === "boolean") {
+              normalizedMeta[finalKey] = boolVal;
+            }
+          }
+          if (Object.keys(normalizedMeta).length > 0) {
+            copy.imaging_meta_info_ok = normalizedMeta;
+          }
+        }
+        var locVal = normalizeBoolean(a.localisation_rubric_ok);
+        if (typeof locVal === "boolean") {
+          copy.localisation_rubric_ok = locVal;
+        }
+        var diagVal = normalizeBoolean(a.diagnosis_rubric_ok);
+        if (typeof diagVal === "boolean") {
+          copy.diagnosis_rubric_ok = diagVal;
+        }
+        if (typeof a.localisation_comment !== "undefined") {
+          copy.localisation_comment = a.localisation_comment;
+        }
+        if (typeof a.diagnosis_comment !== "undefined") {
+          copy.diagnosis_comment = a.diagnosis_comment;
+        }
+        if (typeof a.complete === "boolean") {
+          copy.complete = a.complete;
+        }
+        return copy;
+      }
+
+      function hasCompleteImagingAnnotations(entry, caseObj) {
+        var exams = (caseObj && Array.isArray(caseObj.imaging_examinations)) ? caseObj.imaging_examinations : [];
+        if (exams.length === 0) return true;
+        if (!entry) return false;
+        var orderMap = entry.imaging_preferred_order || {};
+        var metaMap = entry.imaging_meta_info_ok || {};
+        var usedOrders = {};
+        for (var i = 0; i < exams.length; i++) {
+          var key = i + 1;
+          var rawOrder = orderMap[key] != null ? orderMap[key] : orderMap[i];
+          var orderVal = parseInt(rawOrder, 10);
+          var hasOrder = !isNaN(orderVal);
+          if (hasOrder) {
+            if (usedOrders[orderVal]) {
+              return false;
+            }
+            usedOrders[orderVal] = true;
+          }
+          var rawMeta = metaMap[key] != null ? metaMap[key] : metaMap[i];
+          var hasMeta = typeof rawMeta === "boolean";
+          if (!hasOrder || !hasMeta) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function isMajorityComplete(entry, caseObj) {
+        return !!entry &&
+          typeof entry.localisation_rubric_ok === "boolean" &&
+          typeof entry.diagnosis_rubric_ok === "boolean" &&
+          typeof entry.rarity === "string" &&
+          entry.rarity.trim() !== "" &&
+          hasCompleteImagingAnnotations(entry, caseObj);
+      }
+
+      function isMetaComplete(metaEntry, caseObj) {
+        if (!metaEntry) return false;
+        if (!metaEntry.difficulty || typeof metaEntry.difficulty !== "string" || metaEntry.difficulty.trim() === "") {
+          return false;
+        }
+        if (!metaEntry.rarity || typeof metaEntry.rarity !== "string" || metaEntry.rarity.trim() === "") {
+          return false;
+        }
+        if (typeof metaEntry.discard !== "boolean") {
+          return false;
+        }
+        var stepsCount = 0;
+        if (caseObj && caseObj.diagnostic_steps && Array.isArray(caseObj.diagnostic_steps.steps)) {
+          stepsCount = caseObj.diagnostic_steps.steps.length;
+        }
+        if (stepsCount > 0) {
+          if (!metaEntry.steps_essential) return false;
+          for (var i = 1; i <= stepsCount; i++) {
+            var v = metaEntry.steps_essential[i];
+            if (!v || !normalizeStepPriority(v)) {
+              return false;
+            }
+          }
+        }
+        if (!hasCompleteImagingAnnotations(metaEntry, caseObj)) {
+          return false;
+        }
+        if (typeof metaEntry.localisation_rubric_ok !== "boolean") {
+          return false;
+        }
+        if (typeof metaEntry.diagnosis_rubric_ok !== "boolean") {
+          return false;
+        }
+        return true;
+      }
+
+      function computeMajority(values) {
+        if (!values || !values.length) return undefined;
+        var counts = {};
+        var bestKey = null;
+        var bestCount = 0;
+        for (var i = 0; i < values.length; i++) {
+          var v = values[i];
+          if (v === undefined || v === null) continue;
+          if (typeof v === "string" && v.trim() === "") continue;
+          var key = typeof v === "string" ? v.trim() : JSON.stringify(v);
+          if (!key) continue;
+          counts[key] = (counts[key] || 0) + 1;
+          if (counts[key] > bestCount) {
+            bestCount = counts[key];
+            bestKey = key;
+          }
+        }
+        if (!bestKey) return undefined;
+        for (var j = 0; j < values.length; j++) {
+          var v2 = values[j];
+          if (v2 === undefined || v2 === null) continue;
+          var key2 = typeof v2 === "string" ? v2.trim() : JSON.stringify(v2);
+          if (key2 === bestKey) return v2;
+        }
+        return undefined;
+      }
+
+      function computeConsensusImagingOrder(doctorAnswers, numExams) {
+        var examScores = {};
+        for (var i = 1; i <= numExams; i++) {
+          examScores[i] = { sum: 0, count: 0 };
+        }
+        for (var d = 0; d < doctorAnswers.length; d++) {
+          var a = doctorAnswers[d];
+          if (!a || !a.imaging_preferred_order) continue;
+          var map = a.imaging_preferred_order;
+          for (var idx = 1; idx <= numExams; idx++) {
+            var raw = map[idx] != null ? map[idx] : map[idx - 1];
+            if (typeof raw === "undefined") continue;
+            var n = parseInt(raw, 10);
+            if (isNaN(n)) continue;
+            examScores[idx].sum += n;
+            examScores[idx].count += 1;
+          }
+        }
+        var arr = [];
+        for (var e = 1; e <= numExams; e++) {
+          var s = examScores[e];
+          var avg = s.count ? (s.sum / s.count) : (numExams + 1);
+          arr.push({ examIndex: e, avg: avg });
+        }
+        arr.sort(function (a, b) {
+          if (a.avg === b.avg) return a.examIndex - b.examIndex;
+          return a.avg - b.avg;
+        });
+        var result = {};
+        for (var k = 0; k < arr.length; k++) {
+          result[arr[k].examIndex] = k + 1;
+        }
+        return result;
+      }
+
+      function getMajorityEntryForCase(caseId, caseObj) {
+        var entry = { case_id: caseId };
+        if (!doctors || doctors.length === 0) return entry;
+        var doctorAnswers = [];
+        for (var i = 0; i < doctors.length; i++) {
+          var ans = doctors[i].answersByCaseId[caseId];
+          if (ans) {
+            doctorAnswers.push(ans);
+          }
+        }
+        if (doctorAnswers.length === 0) {
+          return entry;
+        }
+
+        function gatherValues(getter) {
+          var values = [];
+          for (var i = 0; i < doctorAnswers.length; i++) {
+            var v = getter(doctorAnswers[i]);
+            if (v === undefined || v === null) continue;
+            if (typeof v === "string" && v.trim() === "") continue;
+            values.push(v);
+          }
+          return values;
+        }
+
+        // difficulty
+        var diffVals = gatherValues(function (a) { return a.difficulty; });
+        var diffMaj = computeMajority(diffVals);
+        if (diffMaj !== undefined) entry.difficulty = diffMaj;
+
+        // rarity
+        var rarityVals = gatherValues(function (a) { return a.rarity; });
+        var rarityMaj = computeMajority(rarityVals);
+        if (rarityMaj !== undefined) entry.rarity = rarityMaj;
+
+        // discard
+        var discardVals = gatherValues(function (a) {
+          if (typeof a.discard !== "undefined") return normalizeBoolean(a.discard);
+          return undefined;
+        });
+        var discardMaj = computeMajority(discardVals);
+        if (discardMaj !== undefined) entry.discard = discardMaj;
+
+        // red flag
+        var redVals = gatherValues(function (a) { return a.red_flag_exam; });
+        var redMaj = computeMajority(redVals);
+        if (redMaj !== undefined) entry.red_flag_exam = redMaj;
+
+        // comment
+        var commentVals = gatherValues(function (a) { return a.comment; });
+        var commentMaj = computeMajority(commentVals);
+        if (commentMaj !== undefined) entry.comment = commentMaj;
+
+        // steps
+        var stepsCount = 0;
+        if (caseObj && caseObj.diagnostic_steps && Array.isArray(caseObj.diagnostic_steps.steps)) {
+          stepsCount = caseObj.diagnostic_steps.steps.length;
+        }
+        if (stepsCount > 0) {
+          var stepsMap = {};
+          for (var s = 1; s <= stepsCount; s++) {
+            (function (stepIndex) {
+              var vals = gatherValues(function (a) {
+                if (!a.steps_essential) return undefined;
+                var m = a.steps_essential;
+                var raw = m[stepIndex] != null ? m[stepIndex] : m[stepIndex - 1];
+                return normalizeStepPriority(raw);
+              });
+              var maj = computeMajority(vals);
+              if (maj !== undefined) {
+                stepsMap[stepIndex] = maj;
+              }
+            })(s);
+          }
+          if (Object.keys(stepsMap).length > 0) {
+            entry.steps_essential = stepsMap;
+          }
+        }
+
+        // imaging
+        var numExams = 0;
+        if (caseObj && Array.isArray(caseObj.imaging_examinations)) {
+          numExams = caseObj.imaging_examinations.length;
+        }
+        if (numExams > 0) {
+          var orderConsensus = computeConsensusImagingOrder(doctorAnswers, numExams);
+          if (orderConsensus && Object.keys(orderConsensus).length > 0) {
+            entry.imaging_preferred_order = orderConsensus;
+          }
+
+          var metaOkMap = {};
+          var metaCommentMap = {};
+          for (var e = 1; e <= numExams; e++) {
+            (function (examIndex) {
+              var boolVals = gatherValues(function (a) {
+                if (!a.imaging_meta_info_ok) return undefined;
+                var m = a.imaging_meta_info_ok;
+                var raw = m[examIndex] != null ? m[examIndex] : m[examIndex - 1];
+                var b = normalizeBoolean(raw);
+                return typeof b === "boolean" ? b : undefined;
+              });
+              var boolMaj = computeMajority(boolVals);
+              if (typeof boolMaj === "boolean") {
+                metaOkMap[examIndex] = boolMaj;
+              }
+
+              var commentValsExam = gatherValues(function (a) {
+                if (!a.imaging_meta_info_comment) return undefined;
+                var m = a.imaging_meta_info_comment;
+                var raw = m[examIndex] != null ? m[examIndex] : m[examIndex - 1];
+                if (typeof raw === "string") return raw;
+                return undefined;
+              });
+              var commentMajExam = computeMajority(commentValsExam);
+              if (typeof commentMajExam === "string") {
+                metaCommentMap[examIndex] = commentMajExam;
+              }
+            })(e);
+          }
+          if (Object.keys(metaOkMap).length > 0) {
+            entry.imaging_meta_info_ok = metaOkMap;
+          }
+          if (Object.keys(metaCommentMap).length > 0) {
+            entry.imaging_meta_info_comment = metaCommentMap;
+          }
+        }
+
+        // rubric OK
+        var locVals = gatherValues(function (a) {
+          if (typeof a.localisation_rubric_ok !== "undefined") {
+            return normalizeBoolean(a.localisation_rubric_ok);
+          }
+          return undefined;
+        });
+        var locMaj = computeMajority(locVals);
+        if (typeof locMaj === "boolean") {
+          entry.localisation_rubric_ok = locMaj;
+        }
+
+        var locCommentVals = gatherValues(function (a) { return a.localisation_comment; });
+        var locCommentMaj = computeMajority(locCommentVals);
+        if (typeof locCommentMaj === "string") {
+          entry.localisation_comment = locCommentMaj;
+        }
+
+        var diagVals = gatherValues(function (a) {
+          if (typeof a.diagnosis_rubric_ok !== "undefined") {
+            return normalizeBoolean(a.diagnosis_rubric_ok);
+          }
+          return undefined;
+        });
+        var diagMaj = computeMajority(diagVals);
+        if (typeof diagMaj === "boolean") {
+          entry.diagnosis_rubric_ok = diagMaj;
+        }
+
+        var diagCommentVals = gatherValues(function (a) { return a.diagnosis_comment; });
+        var diagCommentMaj = computeMajority(diagCommentVals);
+        if (typeof diagCommentMaj === "string") {
+          entry.diagnosis_comment = diagCommentMaj;
+        }
+
+        entry.complete = isMajorityComplete(entry, caseObj);
+        return entry;
+      }
+
+      function initMetaForCase(caseId, caseObj) {
+        if (!metaByCaseId[caseId]) {
+          var majorityEntry = getMajorityEntryForCase(caseId, caseObj);
+          var clone;
+          try {
+            clone = JSON.parse(JSON.stringify(majorityEntry || { case_id: caseId }));
+          } catch (e) {
+            clone = { case_id: caseId };
+          }
+          if (!clone.case_id) clone.case_id = caseId;
+          metaByCaseId[caseId] = clone;
+          markMetaDirty();
+        }
+      }
+
+      function doctorsHaveDiff(caseId, getterFn) {
+        if (!doctors || doctors.length <= 1) return false;
+        var haveValue = false;
+        var firstValJson = null;
+        for (var i = 0; i < doctors.length; i++) {
+          var doc = doctors[i];
+          var v = getterFn(doc);
+          if (v === undefined || v === null) continue;
+          if (typeof v === "string" && v.trim() === "") continue;
+          var json = JSON.stringify(v);
+          if (!haveValue) {
+            haveValue = true;
+            firstValJson = json;
+          } else if (json !== firstValJson) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function updateHeaderCounts() {
+        if (!cases || cases.length === 0) {
+          headerCaseCounterEl.textContent = "No dataset loaded";
+        } else {
+          headerCaseCounterEl.textContent = "Case " + (currentCaseIndex + 1) + " / " + cases.length;
+        }
+        headerDoctorCounterEl.textContent = (doctors ? doctors.length : 0) + " doctors loaded";
+        datasetIdValueEl.textContent = datasetId || "—";
+      }
+
+      function updatePrevNextButtons() {
+        btnPrevCase.disabled = (!cases || cases.length === 0 || currentCaseIndex <= 0);
+        btnNextCase.disabled = (!cases || cases.length === 0 || currentCaseIndex >= cases.length - 1);
+      }
+
+      function buildCaseList() {
+        caseListEl.innerHTML = "";
+        if (!cases || cases.length === 0) {
+          return;
+        }
+        for (var i = 0; i < cases.length; i++) {
+          var c = cases[i];
+          var caseId = extractCaseId(c.case_url, i);
+          var li = document.createElement("li");
+          li.className = "case-item";
+          li.setAttribute("data-index", String(i));
+          li.setAttribute("data-case-id", caseId);
+
+          var dot = document.createElement("div");
+          dot.className = "status-dot";
+          li.appendChild(dot);
+
+          var label = document.createElement("div");
+          label.className = "case-item-title";
+          label.textContent = (i + 1) + ". " + (c.case_title || caseId);
+          li.appendChild(label);
+
+          (function (idx) {
+            li.addEventListener("click", function () {
+              switchCase(idx, true);
+            });
+          })(i);
+
+          caseListEl.appendChild(li);
+        }
+        updateCaseListStatus();
+      }
+
+      function updateCaseListStatus() {
+        var items = caseListEl.querySelectorAll(".case-item");
+        for (var i = 0; i < items.length; i++) {
+          var li = items[i];
+          var idx = parseInt(li.getAttribute("data-index"), 10);
+          var caseId = li.getAttribute("data-case-id");
+          var caseObj = cases[idx];
+          var metaEntry = metaByCaseId[caseId];
+          var complete = isMetaComplete(metaEntry, caseObj);
+          if (complete) {
+            li.classList.add("completed");
+          } else {
+            li.classList.remove("completed");
+          }
+          if (idx === currentCaseIndex) {
+            li.classList.add("active");
+          } else {
+            li.classList.remove("active");
+          }
+        }
+      }
+
+      function renderDoctorPills() {
+        doctorPillsEl.innerHTML = "";
+        if (!doctors || doctors.length === 0) {
+          var span = document.createElement("span");
+          span.textContent = "No result JSON loaded.";
+          doctorPillsEl.appendChild(span);
+          return;
+        }
+        for (var i = 0; i < doctors.length; i++) {
+          (function (doc) {
+            var pill = document.createElement("button");
+            pill.type = "button";
+            pill.className = "doctor-pill";
+            pill.setAttribute("data-doctor-id", doc.id);
+            var nameSpan = document.createElement("span");
+            nameSpan.textContent = doc.name;
+            pill.appendChild(nameSpan);
+            if (doc.sourceFileName) {
+              var small = document.createElement("span");
+              small.className = "source";
+              small.textContent = "(" + doc.sourceFileName + ")";
+              pill.appendChild(small);
+            }
+            pill.addEventListener("click", function () {
+              var newName = window.prompt("Rename doctor:", doc.name);
+              if (newName && newName.trim() !== "") {
+                doc.name = newName.trim();
+                renderDoctorPills();
+                if (cases && cases.length > 0) {
+                  var caseObj = cases[currentCaseIndex];
+                  var caseId = extractCaseId(caseObj.case_url, currentCaseIndex);
+                  renderGlobalTable(caseObj, caseId);
+                  renderStepsTable(caseObj, caseId);
+                  renderImagingSection(caseObj, caseId);
+                  renderRubricEvaluation(caseObj, caseId);
+                }
+              }
+            });
+            doctorPillsEl.appendChild(pill);
+          })(doctors[i]);
+        }
+      }
+
+      function renderGlobalTable(caseObj, caseId) {
+        if (!doctors || doctors.length === 0 || !cases || cases.length === 0) {
+          globalSection.style.display = "none";
+          globalTableContainer.innerHTML = "";
+          return;
+        }
+        globalSection.style.display = "block";
+        globalTableContainer.innerHTML = "";
+
+        var metaEntry = metaByCaseId[caseId] || {};
+
+        var table = document.createElement("table");
+        table.className = "matrix-table";
+
+        var thead = document.createElement("thead");
+        var trHead = document.createElement("tr");
+        var thField = document.createElement("th");
+        thField.textContent = "Field";
+        trHead.appendChild(thField);
+
+        for (var i = 0; i < doctors.length; i++) {
+          var thDoc = document.createElement("th");
+          thDoc.textContent = doctors[i].name;
+          trHead.appendChild(thDoc);
+        }
+
+        var thMeta = document.createElement("th");
+        thMeta.textContent = "Meta (final)";
+        trHead.appendChild(thMeta);
+
+        var thDiff = document.createElement("th");
+        thDiff.textContent = "Diff";
+        trHead.appendChild(thDiff);
+
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+
+        // Difficulty
+        (function () {
+          var tr = document.createElement("tr");
+          var tdLabel = document.createElement("td");
+          tdLabel.className = "field-label";
+          tdLabel.textContent = "Difficulty";
+          tr.appendChild(tdLabel);
+
+          for (var i = 0; i < doctors.length; i++) {
+            var td = document.createElement("td");
+            td.className = "doctor-cell";
+            var ans = doctors[i].answersByCaseId[caseId];
+            var val = ans && ans.difficulty;
+            td.textContent = val ? val : "—";
+            tr.appendChild(td);
+          }
+
+          var tdMeta = document.createElement("td");
+          tdMeta.className = "meta-cell";
+          var sel = document.createElement("select");
+          sel.dataset.metaField = "difficulty";
+          var optEmpty = document.createElement("option");
+          optEmpty.value = "";
+          optEmpty.textContent = "-- select --";
+          sel.appendChild(optEmpty);
+
+          ["normal", "hard", "extrem hard"].forEach(function (v) {
+            var o = document.createElement("option");
+            o.value = v;
+            o.textContent = v;
+            sel.appendChild(o);
+          });
+
+          if (metaEntry.difficulty) {
+            sel.value = metaEntry.difficulty;
+          }
+
+          sel.addEventListener("change", function () {
+            var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+            if (!this.value) {
+              delete m.difficulty;
+            } else {
+              m.difficulty = this.value;
+            }
+            markMetaDirty();
+            updateCaseListStatus();
+          });
+
+          tdMeta.appendChild(sel);
+          tr.appendChild(tdMeta);
+
+          var tdDiff = document.createElement("td");
+          var dot = document.createElement("span");
+          dot.className = "diff-dot";
+          if (doctorsHaveDiff(caseId, function (doc) {
+            var ans = doc.answersByCaseId[caseId];
+            return ans && ans.difficulty;
+          })) {
+            dot.classList.add("has-diff");
+          }
+          tdDiff.appendChild(dot);
+          tr.appendChild(tdDiff);
+
+          tbody.appendChild(tr);
+        })();
+
+        // Rarity
+        (function () {
+          var tr = document.createElement("tr");
+          var tdLabel = document.createElement("td");
+          tdLabel.className = "field-label";
+          tdLabel.textContent = "Rarity";
+          tr.appendChild(tdLabel);
+
+          for (var i = 0; i < doctors.length; i++) {
+            var td = document.createElement("td");
+            td.className = "doctor-cell";
+            var ans = doctors[i].answersByCaseId[caseId];
+            var val = ans && ans.rarity;
+            td.textContent = val ? val : "—";
+            tr.appendChild(td);
+          }
+
+          var tdMeta = document.createElement("td");
+          tdMeta.className = "meta-cell";
+          var sel = document.createElement("select");
+          sel.dataset.metaField = "rarity";
+          var optEmpty = document.createElement("option");
+          optEmpty.value = "";
+          optEmpty.textContent = "-- select --";
+          sel.appendChild(optEmpty);
+          ["Common", "Rare", "Extrem Rare"].forEach(function (v) {
+            var o = document.createElement("option");
+            o.value = v;
+            o.textContent = v;
+            sel.appendChild(o);
+          });
+          if (metaEntry.rarity) {
+            sel.value = metaEntry.rarity;
+          }
+          sel.addEventListener("change", function () {
+            var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+            if (!this.value) {
+              delete m.rarity;
+            } else {
+              m.rarity = this.value;
+            }
+            markMetaDirty();
+            updateCaseListStatus();
+          });
+          tdMeta.appendChild(sel);
+          tr.appendChild(tdMeta);
+
+          var tdDiff = document.createElement("td");
+          var dot = document.createElement("span");
+          dot.className = "diff-dot";
+          if (doctorsHaveDiff(caseId, function (doc) {
+            var ans = doc.answersByCaseId[caseId];
+            return ans && ans.rarity;
+          })) {
+            dot.classList.add("has-diff");
+          }
+          tdDiff.appendChild(dot);
+          tr.appendChild(tdDiff);
+
+          tbody.appendChild(tr);
+        })();
+
+        // Discard
+        (function () {
+          var tr = document.createElement("tr");
+          var tdLabel = document.createElement("td");
+          tdLabel.className = "field-label";
+          tdLabel.textContent = "Discard case";
+          tr.appendChild(tdLabel);
+
+          for (var i = 0; i < doctors.length; i++) {
+            var td = document.createElement("td");
+            td.className = "doctor-cell";
+            var ans = doctors[i].answersByCaseId[caseId];
+            var val = null;
+            if (ans && typeof ans.discard !== "undefined") {
+              var b = normalizeBoolean(ans.discard);
+              if (typeof b === "boolean") val = b;
+            }
+            td.textContent = (typeof val === "boolean") ? (val ? "True" : "False") : "—";
+            tr.appendChild(td);
+          }
+
+          var tdMeta = document.createElement("td");
+          tdMeta.className = "meta-cell";
+          var sel = document.createElement("select");
+          sel.dataset.metaField = "discard";
+          var optEmpty = document.createElement("option");
+          optEmpty.value = "";
+          optEmpty.textContent = "-- select --";
+          sel.appendChild(optEmpty);
+          var optTrue = document.createElement("option");
+          optTrue.value = "true";
+          optTrue.textContent = "True";
+          sel.appendChild(optTrue);
+          var optFalse = document.createElement("option");
+          optFalse.value = "false";
+          optFalse.textContent = "False";
+          sel.appendChild(optFalse);
+          if (typeof metaEntry.discard === "boolean") {
+            sel.value = metaEntry.discard ? "true" : "false";
+          }
+          sel.addEventListener("change", function () {
+            var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+            if (!this.value) {
+              delete m.discard;
+            } else {
+              m.discard = (this.value === "true");
+            }
+            markMetaDirty();
+            updateCaseListStatus();
+          });
+          tdMeta.appendChild(sel);
+          tr.appendChild(tdMeta);
+
+          var tdDiff = document.createElement("td");
+          var dot = document.createElement("span");
+          dot.className = "diff-dot";
+          if (doctorsHaveDiff(caseId, function (doc) {
+            var ans = doc.answersByCaseId[caseId];
+            if (!ans || typeof ans.discard === "undefined") return undefined;
+            var b = normalizeBoolean(ans.discard);
+            return typeof b === "boolean" ? b : undefined;
+          })) {
+            dot.classList.add("has-diff");
+          }
+          tdDiff.appendChild(dot);
+          tr.appendChild(tdDiff);
+
+          tbody.appendChild(tr);
+        })();
+
+        // Red-flag exams
+        (function () {
+          var tr = document.createElement("tr");
+          var tdLabel = document.createElement("td");
+          tdLabel.className = "field-label";
+          tdLabel.textContent = "Harmful / red-flag exams";
+          tr.appendChild(tdLabel);
+
+          for (var i = 0; i < doctors.length; i++) {
+            var td = document.createElement("td");
+            td.className = "doctor-cell comment-cell";
+            var ans = doctors[i].answersByCaseId[caseId];
+            var val = ans && ans.red_flag_exam;
+            td.textContent = val ? val : "—";
+            tr.appendChild(td);
+          }
+
+          var tdMeta = document.createElement("td");
+          tdMeta.className = "meta-cell";
+          var area = document.createElement("textarea");
+          area.rows = 2;
+          area.dataset.metaField = "red_flag_exam";
+          if (typeof metaEntry.red_flag_exam === "string") {
+            area.value = metaEntry.red_flag_exam;
+          }
+          area.addEventListener("input", function () {
+            var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+            if (this.value.trim() === "") {
+              delete m.red_flag_exam;
+            } else {
+              m.red_flag_exam = this.value;
+            }
+            markMetaDirty();
+            // optional for completeness
+          });
+          tdMeta.appendChild(area);
+          tr.appendChild(tdMeta);
+
+          var tdDiff = document.createElement("td");
+          var dot = document.createElement("span");
+          dot.className = "diff-dot";
+          if (doctorsHaveDiff(caseId, function (doc) {
+            var ans = doc.answersByCaseId[caseId];
+            return ans && ans.red_flag_exam;
+          })) {
+            dot.classList.add("has-diff");
+          }
+          tdDiff.appendChild(dot);
+          tr.appendChild(tdDiff);
+
+          tbody.appendChild(tr);
+        })();
+
+        // Case comment (no red diff)
+        (function () {
+          var tr = document.createElement("tr");
+          var tdLabel = document.createElement("td");
+          tdLabel.className = "field-label";
+          tdLabel.textContent = "Case comment";
+          tr.appendChild(tdLabel);
+
+          for (var i = 0; i < doctors.length; i++) {
+            var td = document.createElement("td");
+            td.className = "doctor-cell comment-cell";
+            var ans = doctors[i].answersByCaseId[caseId];
+            var val = ans && ans.comment;
+            td.textContent = val ? val : "—";
+            tr.appendChild(td);
+          }
+
+          var tdMeta = document.createElement("td");
+          tdMeta.className = "meta-cell";
+          var area = document.createElement("textarea");
+          area.rows = 3;
+          area.dataset.metaField = "comment";
+          if (typeof metaEntry.comment === "string") {
+            area.value = metaEntry.comment;
+          }
+          area.addEventListener("input", function () {
+            var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+            if (this.value.trim() === "") {
+              delete m.comment;
+            } else {
+              m.comment = this.value;
+            }
+            markMetaDirty();
+            // comment optional for completeness
+          });
+          tdMeta.appendChild(area);
+          tr.appendChild(tdMeta);
+
+          var tdDiff = document.createElement("td");
+          var dot = document.createElement("span");
+          dot.className = "diff-dot"; // comments never get red
+          tdDiff.appendChild(dot);
+          tr.appendChild(tdDiff);
+
+          tbody.appendChild(tr);
+        })();
+
+        table.appendChild(tbody);
+        globalTableContainer.appendChild(table);
+      }
+
+      function renderStepsTable(caseObj, caseId) {
+        var steps = (caseObj && caseObj.diagnostic_steps && Array.isArray(caseObj.diagnostic_steps.steps))
+          ? caseObj.diagnostic_steps.steps
+          : [];
+        if (!steps.length || !doctors || doctors.length === 0) {
+          stepsSection.style.display = "none";
+          stepsTableContainer.innerHTML = "";
+          return;
+        }
+        stepsSection.style.display = "block";
+        stepsTableContainer.innerHTML = "";
+
+        var metaEntry = metaByCaseId[caseId] || {};
+        var metaSteps = metaEntry.steps_essential || {};
+
+        var table = document.createElement("table");
+        table.className = "matrix-table";
+
+        var thead = document.createElement("thead");
+        var trHead = document.createElement("tr");
+        var thField = document.createElement("th");
+        thField.textContent = "Step";
+        trHead.appendChild(thField);
+        for (var i = 0; i < doctors.length; i++) {
+          var thDoc = document.createElement("th");
+          thDoc.textContent = doctors[i].name;
+          trHead.appendChild(thDoc);
+        }
+        var thMeta = document.createElement("th");
+        thMeta.textContent = "Meta priority";
+        trHead.appendChild(thMeta);
+        var thDiff = document.createElement("th");
+        thDiff.textContent = "Diff";
+        trHead.appendChild(thDiff);
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+
+        for (var s = 0; s < steps.length; s++) {
+          (function (stepIndex) {
+            var step = steps[stepIndex];
+            var stepNumber = stepIndex + 1;
+            var tr = document.createElement("tr");
+
+            var tdLabel = document.createElement("td");
+            tdLabel.className = "field-label";
+            var main = document.createElement("div");
+            main.textContent = step.step || ("Step " + stepNumber);
+            tdLabel.appendChild(main);
+            if (step.source) {
+              var src = document.createElement("div");
+              src.className = "exam-subtitle";
+              src.textContent = "Source: " + step.source;
+              tdLabel.appendChild(src);
+            }
+            if (step.reason) {
+              var reason = document.createElement("div");
+              reason.className = "exam-metainfo";
+              reason.textContent = step.reason;
+              tdLabel.appendChild(reason);
+            }
+            tr.appendChild(tdLabel);
+
+            for (var i = 0; i < doctors.length; i++) {
+              var tdDoc = document.createElement("td");
+              tdDoc.className = "doctor-cell";
+              var ans = doctors[i].answersByCaseId[caseId];
+              var priority = null;
+              if (ans && ans.steps_essential) {
+                var m = ans.steps_essential;
+                var raw = m[stepNumber] != null ? m[stepNumber] : m[stepNumber - 1];
+                priority = normalizeStepPriority(raw);
+              }
+              if (!priority && typeof step.priority !== "undefined") {
+                priority = normalizeStepPriority(step.priority);
+              }
+              if (!priority && typeof step.essential !== "undefined") {
+                priority = normalizeStepPriority(step.essential);
+              }
+              if (!priority) {
+                tdDoc.textContent = "—";
+              } else {
+                var chip = document.createElement("span");
+                chip.className = "chip chip-" + priority;
+                chip.textContent = priority.charAt(0).toUpperCase() + priority.slice(1);
+                tdDoc.appendChild(chip);
+              }
+              tr.appendChild(tdDoc);
+            }
+
+            var tdMeta = document.createElement("td");
+            tdMeta.className = "meta-cell";
+            var sel = document.createElement("select");
+            sel.className = "meta-step-select";
+            sel.dataset.stepIndex = String(stepNumber);
+
+            var optEmpty = document.createElement("option");
+            optEmpty.value = "";
+            optEmpty.textContent = "-- select --";
+            sel.appendChild(optEmpty);
+            ["essential", "optional", "unnecessary"].forEach(function (v) {
+              var o = document.createElement("option");
+              o.value = v;
+              o.textContent = v.charAt(0).toUpperCase() + v.slice(1);
+              sel.appendChild(o);
+            });
+
+            var metaVal = metaSteps[stepNumber];
+            if (metaVal) {
+              sel.value = metaVal;
+            }
+
+            sel.addEventListener("change", function () {
+              var idx = parseInt(this.dataset.stepIndex, 10);
+              var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+              if (!m.steps_essential) m.steps_essential = {};
+              if (!this.value) {
+                delete m.steps_essential[idx];
+              } else {
+                m.steps_essential[idx] = this.value;
+              }
+              markMetaDirty();
+              updateCaseListStatus();
+            });
+
+            tdMeta.appendChild(sel);
+            tr.appendChild(tdMeta);
+
+            var tdDiff = document.createElement("td");
+            var dot = document.createElement("span");
+            dot.className = "diff-dot";
+            if (doctorsHaveDiff(caseId, function (doc) {
+              var ans = doc.answersByCaseId[caseId];
+              if (!ans || !ans.steps_essential) return undefined;
+              var m = ans.steps_essential;
+              var raw = m[stepNumber] != null ? m[stepNumber] : m[stepNumber - 1];
+              return normalizeStepPriority(raw);
+            })) {
+              dot.classList.add("has-diff");
+            }
+            tdDiff.appendChild(dot);
+            tr.appendChild(tdDiff);
+
+            tbody.appendChild(tr);
+          })(s);
+        }
+
+        table.appendChild(tbody);
+        stepsTableContainer.appendChild(table);
+      }
+
+      function renderImagingSection(caseObj, caseId) {
+        var exams = (caseObj && Array.isArray(caseObj.imaging_examinations)) ? caseObj.imaging_examinations : [];
+        if (!exams.length || !doctors || doctors.length === 0) {
+          imagingSection.style.display = "none";
+          imagingContainer.innerHTML = "";
+          return;
+        }
+        imagingSection.style.display = "block";
+        imagingContainer.innerHTML = "";
+
+        var metaEntry = metaByCaseId[caseId] || {};
+        var metaOrder = metaEntry.imaging_preferred_order || {};
+        var metaInfoOk = metaEntry.imaging_meta_info_ok || {};
+        var metaInfoComment = metaEntry.imaging_meta_info_comment || {};
+        var numExams = exams.length;
+
+        for (var i = 0; i < exams.length; i++) {
+          (function (examIndex) {
+            var exam = exams[examIndex];
+            var indexNumber = examIndex + 1;
+
+            var block = document.createElement("div");
+            block.className = "exam-block";
+
+            var header = document.createElement("div");
+            header.className = "exam-header";
+            var figLabel = exam.figure ? exam.figure + ": " : "";
+            header.textContent = figLabel + (exam.modality || "Imaging examination");
+            block.appendChild(header);
+
+            if (exam.image_caption) {
+              var subtitle = document.createElement("div");
+              subtitle.className = "exam-subtitle";
+              subtitle.textContent = exam.image_caption;
+              block.appendChild(subtitle);
+            }
+
+            var metaInfoDiv = document.createElement("div");
+            metaInfoDiv.className = "exam-metainfo";
+            metaInfoDiv.textContent = "Meta info: " + formatMetaInfoText(exam.meta_info);
+            block.appendChild(metaInfoDiv);
+
+            var table = document.createElement("table");
+            table.className = "matrix-table exam-matrix";
+
+            var thead = document.createElement("thead");
+            var trHead = document.createElement("tr");
+            var thField = document.createElement("th");
+            thField.textContent = "Field";
+            trHead.appendChild(thField);
+            for (var d = 0; d < doctors.length; d++) {
+              var thDoc = document.createElement("th");
+              thDoc.textContent = doctors[d].name;
+              trHead.appendChild(thDoc);
+            }
+            var thMeta = document.createElement("th");
+            thMeta.textContent = "Meta";
+            trHead.appendChild(thMeta);
+            var thDiff = document.createElement("th");
+            thDiff.textContent = "Diff";
+            trHead.appendChild(thDiff);
+            thead.appendChild(trHead);
+            table.appendChild(thead);
+
+            var tbody = document.createElement("tbody");
+
+            // Preferred order row
+            (function () {
+              var tr = document.createElement("tr");
+              var tdLabel = document.createElement("td");
+              tdLabel.className = "field-label";
+              tdLabel.textContent = "Preferred order";
+              tr.appendChild(tdLabel);
+
+              for (var d = 0; d < doctors.length; d++) {
+                var tdDoc = document.createElement("td");
+                tdDoc.className = "doctor-cell";
+                var ans = doctors[d].answersByCaseId[caseId];
+                var order = null;
+                if (ans && ans.imaging_preferred_order) {
+                  var map = ans.imaging_preferred_order;
+                  var raw = map[indexNumber] != null ? map[indexNumber] : map[indexNumber - 1];
+                  if (typeof raw !== "undefined") {
+                    var n = parseInt(raw, 10);
+                    if (!isNaN(n)) order = n;
+                  }
+                }
+                tdDoc.textContent = order != null ? String(order) : "—";
+                tr.appendChild(tdDoc);
+              }
+
+              var tdMeta = document.createElement("td");
+              tdMeta.className = "meta-cell";
+              var sel = document.createElement("select");
+              sel.className = "meta-imaging-order";
+              sel.dataset.examIndex = String(indexNumber);
+              var optEmpty = document.createElement("option");
+              optEmpty.value = "";
+              optEmpty.textContent = "-- select --";
+              sel.appendChild(optEmpty);
+              for (var ord = 1; ord <= numExams; ord++) {
+                var o = document.createElement("option");
+                o.value = String(ord);
+                o.textContent = String(ord);
+                sel.appendChild(o);
+              }
+              var metaVal = metaOrder[indexNumber];
+              if (metaVal != null) {
+                sel.value = String(metaVal);
+              }
+              sel.addEventListener("change", function () {
+                var idx = parseInt(this.dataset.examIndex, 10);
+                var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+                if (!m.imaging_preferred_order) m.imaging_preferred_order = {};
+                if (!this.value) {
+                  delete m.imaging_preferred_order[idx];
+                } else {
+                  var n = parseInt(this.value, 10);
+                  if (!isNaN(n)) {
+                    m.imaging_preferred_order[idx] = n;
+                  }
+                }
+                markMetaDirty();
+                updateCaseListStatus();
+              });
+              tdMeta.appendChild(sel);
+              tr.appendChild(tdMeta);
+
+              var tdDiff = document.createElement("td");
+              var dot = document.createElement("span");
+              dot.className = "diff-dot";
+              if (doctorsHaveDiff(caseId, function (doc) {
+                var ans = doc.answersByCaseId[caseId];
+                if (!ans || !ans.imaging_preferred_order) return undefined;
+                var map = ans.imaging_preferred_order;
+                var raw = map[indexNumber] != null ? map[indexNumber] : map[indexNumber - 1];
+                if (typeof raw === "undefined") return undefined;
+                var n = parseInt(raw, 10);
+                if (isNaN(n)) return undefined;
+                return n;
+              })) {
+                dot.classList.add("has-diff");
+              }
+              tdDiff.appendChild(dot);
+              tr.appendChild(tdDiff);
+
+              tbody.appendChild(tr);
+            })();
+
+            // Meta info OK row
+            (function () {
+              var tr = document.createElement("tr");
+              var tdLabel = document.createElement("td");
+              tdLabel.className = "field-label";
+              tdLabel.textContent = "Meta info OK?";
+              tr.appendChild(tdLabel);
+
+              for (var d = 0; d < doctors.length; d++) {
+                var tdDoc = document.createElement("td");
+                tdDoc.className = "doctor-cell";
+                var ans = doctors[d].answersByCaseId[caseId];
+                var ok = null;
+                if (ans && ans.imaging_meta_info_ok) {
+                  var map = ans.imaging_meta_info_ok;
+                  var raw = map[indexNumber] != null ? map[indexNumber] : map[indexNumber - 1];
+                  var b = normalizeBoolean(raw);
+                  if (typeof b === "boolean") ok = b;
+                }
+                tdDoc.textContent = (typeof ok === "boolean") ? (ok ? "True" : "False") : "—";
+                tr.appendChild(tdDoc);
+              }
+
+              var tdMeta = document.createElement("td");
+              tdMeta.className = "meta-cell";
+              var sel = document.createElement("select");
+              sel.className = "meta-imaging-ok";
+              sel.dataset.examIndex = String(indexNumber);
+              var optEmpty = document.createElement("option");
+              optEmpty.value = "";
+              optEmpty.textContent = "-- select --";
+              sel.appendChild(optEmpty);
+              var optTrue = document.createElement("option");
+              optTrue.value = "true";
+              optTrue.textContent = "True";
+              sel.appendChild(optTrue);
+              var optFalse = document.createElement("option");
+              optFalse.value = "false";
+              optFalse.textContent = "False";
+              sel.appendChild(optFalse);
+              var metaVal = metaInfoOk[indexNumber];
+              if (typeof metaVal === "boolean") {
+                sel.value = metaVal ? "true" : "false";
+              }
+              sel.addEventListener("change", function () {
+                var idx = parseInt(this.dataset.examIndex, 10);
+                var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+                if (!m.imaging_meta_info_ok) m.imaging_meta_info_ok = {};
+                if (!this.value) {
+                  delete m.imaging_meta_info_ok[idx];
+                } else {
+                  m.imaging_meta_info_ok[idx] = (this.value === "true");
+                }
+                markMetaDirty();
+                updateCaseListStatus();
+              });
+              tdMeta.appendChild(sel);
+              tr.appendChild(tdMeta);
+
+              var tdDiff = document.createElement("td");
+              var dot = document.createElement("span");
+              dot.className = "diff-dot";
+              if (doctorsHaveDiff(caseId, function (doc) {
+                var ans = doc.answersByCaseId[caseId];
+                if (!ans || !ans.imaging_meta_info_ok) return undefined;
+                var map = ans.imaging_meta_info_ok;
+                var raw = map[indexNumber] != null ? map[indexNumber] : map[indexNumber - 1];
+                var b = normalizeBoolean(raw);
+                if (typeof b === "boolean") return b;
+                return undefined;
+              })) {
+                dot.classList.add("has-diff");
+              }
+              tdDiff.appendChild(dot);
+              tr.appendChild(tdDiff);
+
+              tbody.appendChild(tr);
+            })();
+
+            // Meta comment row (final only, no red diff)
+            (function () {
+              var tr = document.createElement("tr");
+              var tdLabel = document.createElement("td");
+              tdLabel.className = "field-label";
+              tdLabel.textContent = "Meta comment";
+              tr.appendChild(tdLabel);
+
+              for (var d = 0; d < doctors.length; d++) {
+                var tdDoc = document.createElement("td");
+                tdDoc.className = "doctor-cell comment-cell";
+                var ans = doctors[d].answersByCaseId[caseId];
+                var cmt = null;
+                if (ans && ans.imaging_meta_info_comment) {
+                  var m = ans.imaging_meta_info_comment;
+                  var raw = m[indexNumber] != null ? m[indexNumber] : m[indexNumber - 1];
+                  if (typeof raw === "string") cmt = raw;
+                }
+                tdDoc.textContent = cmt ? cmt : "—";
+                tr.appendChild(tdDoc);
+              }
+
+              var tdMeta = document.createElement("td");
+              tdMeta.className = "meta-cell";
+              var area = document.createElement("textarea");
+              area.className = "meta-imaging-comment";
+              area.dataset.examIndex = String(indexNumber);
+              area.rows = 2;
+              if (typeof metaInfoComment[indexNumber] === "string") {
+                area.value = metaInfoComment[indexNumber];
+              }
+              area.addEventListener("input", function () {
+                var idx = parseInt(this.dataset.examIndex, 10);
+                var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+                if (!m.imaging_meta_info_comment) m.imaging_meta_info_comment = {};
+                if (this.value.trim() === "") {
+                  delete m.imaging_meta_info_comment[idx];
+                } else {
+                  m.imaging_meta_info_comment[idx] = this.value;
+                }
+                markMetaDirty();
+                // comment optional
+              });
+              tdMeta.appendChild(area);
+              tr.appendChild(tdMeta);
+
+              var tdDiff = document.createElement("td");
+              var dot = document.createElement("span");
+              dot.className = "diff-dot"; // comments never get red
+              tdDiff.appendChild(dot);
+              tr.appendChild(tdDiff);
+
+              tbody.appendChild(tr);
+            })();
+
+            table.appendChild(tbody);
+            block.appendChild(table);
+            imagingContainer.appendChild(block);
+          })(i);
+        }
+      }
+
+      function renderGenericRubric(rubricEntry, container, titleText) {
+        container.innerHTML = "";
+        var heading = document.createElement("div");
+        heading.className = "level-row";
+        var headingLabel = document.createElement("span");
+        headingLabel.className = "level-label";
+        headingLabel.textContent = titleText + ": ";
+        heading.appendChild(headingLabel);
+        container.appendChild(heading);
+
+        if (!rubricEntry) {
+          var missing = document.createElement("div");
+          missing.textContent = "No rubric data.";
+          container.appendChild(missing);
+          return;
+        }
+
+        if (typeof rubricEntry.reference_answer !== "undefined") {
+          var refDiv = document.createElement("div");
+          refDiv.style.margin = "4px 0";
+          var refLabel = document.createElement("span");
+          refLabel.style.fontWeight = "600";
+          refLabel.textContent = "Reference answer: ";
+          refDiv.appendChild(refLabel);
+          var refContent = document.createElement("span");
+          if (Array.isArray(rubricEntry.reference_answer)) {
+            refContent.textContent = rubricEntry.reference_answer.join(" | ");
+          } else {
+            refContent.textContent = rubricEntry.reference_answer;
+          }
+          refDiv.appendChild(refContent);
+          container.appendChild(refDiv);
+        }
+
+        var levels = ["3", "2", "1", "0"];
+        for (var i = 0; i < levels.length; i++) {
+          var levelKey = levels[i];
+          if (typeof rubricEntry[levelKey] !== "undefined") {
+            var row = document.createElement("div");
+            row.className = "level-row";
+            var labelSpan = document.createElement("span");
+            labelSpan.className = "level-label";
+            labelSpan.textContent = levelKey + " points: ";
+            row.appendChild(labelSpan);
+            var textSpan = document.createElement("span");
+            textSpan.textContent = rubricEntry[levelKey];
+            row.appendChild(textSpan);
+            container.appendChild(row);
+          }
+        }
+      }
+
+      function renderRubricReference(caseObj) {
+        var rubricAll = caseObj && caseObj.rubric_0_to_3;
+        if (!rubricAll) {
+          rubricRefSection.style.display = "none";
+          rubricRefLocalisationEl.textContent = "No rubric available for this case.";
+          rubricRefDescriptionEl.innerHTML = "";
+          rubricRefDiagnosisEl.innerHTML = "";
+          return;
+        }
+        rubricRefSection.style.display = "block";
+        rubricRefLocalisationEl.innerHTML = "";
+        rubricRefDescriptionEl.innerHTML = "";
+        rubricRefDiagnosisEl.innerHTML = "";
+
+        var rubricLoc = rubricAll.Localisation;
+        if (!rubricLoc) {
+          rubricRefLocalisationEl.textContent = "No Localisation rubric in this case JSON.";
+        } else {
+          var title = document.createElement("div");
+          title.className = "level-row";
+          var titleLabel = document.createElement("span");
+          titleLabel.className = "level-label";
+          titleLabel.textContent = "Localisation rubric:";
+          title.appendChild(titleLabel);
+          rubricRefLocalisationEl.appendChild(title);
+
+          var ref = rubricLoc.reference_answer;
+          if (ref && typeof ref === "object") {
+            var dl = document.createElement("dl");
+            dl.style.margin = "0";
+
+            if (typeof ref.Laterality !== "undefined") {
+              var dt1 = document.createElement("dt");
+              dt1.textContent = "Laterality:";
+              dl.appendChild(dt1);
+              var dd1 = document.createElement("dd");
+              dd1.textContent = ref.Laterality;
+              dl.appendChild(dd1);
+            }
+            if (typeof ref["Organ/Region"] !== "undefined") {
+              var dt2 = document.createElement("dt");
+              dt2.textContent = "Organ/Region:";
+              dl.appendChild(dt2);
+              var dd2 = document.createElement("dd");
+              dd2.textContent = ref["Organ/Region"];
+              dl.appendChild(dd2);
+            }
+            if (typeof ref["Specific Substructure/Segment"] !== "undefined") {
+              var dt3 = document.createElement("dt");
+              dt3.textContent = "Specific Substructure/Segment:";
+              dl.appendChild(dt3);
+              var dd3 = document.createElement("dd");
+              dd3.textContent = ref["Specific Substructure/Segment"];
+              dl.appendChild(dd3);
+            }
+
+            rubricRefLocalisationEl.appendChild(dl);
+          }
+
+          var levels = ["3", "2", "1", "0"];
+          for (var i = 0; i < levels.length; i++) {
+            var levelKey = levels[i];
+            if (typeof rubricLoc[levelKey] !== "undefined") {
+              var row = document.createElement("div");
+              row.className = "level-row";
+              var labelSpan = document.createElement("span");
+              labelSpan.className = "level-label";
+              labelSpan.textContent = levelKey + " points: ";
+              row.appendChild(labelSpan);
+              var textSpan = document.createElement("span");
+              textSpan.textContent = rubricLoc[levelKey];
+              row.appendChild(textSpan);
+              rubricRefLocalisationEl.appendChild(row);
+            }
+          }
+        }
+
+        renderGenericRubric(rubricAll.Description, rubricRefDescriptionEl, "Description rubric");
+        renderGenericRubric(rubricAll.Diagnosis, rubricRefDiagnosisEl, "Diagnosis rubric");
+      }
+
+      function renderRubricEvaluation(caseObj, caseId) {
+        var rubricAll = caseObj && caseObj.rubric_0_to_3;
+        if (!rubricAll || !doctors || doctors.length === 0) {
+          rubricEvalSection.style.display = "none";
+          rubricEvalContainer.innerHTML = "";
+          return;
+        }
+        rubricEvalSection.style.display = "block";
+        rubricEvalContainer.innerHTML = "";
+
+        var metaEntry = metaByCaseId[caseId] || {};
+
+        var table = document.createElement("table");
+        table.className = "matrix-table";
+
+        var thead = document.createElement("thead");
+        var trHead = document.createElement("tr");
+        var thField = document.createElement("th");
+        thField.textContent = "Field";
+        trHead.appendChild(thField);
+        for (var i = 0; i < doctors.length; i++) {
+          var thDoc = document.createElement("th");
+          thDoc.textContent = doctors[i].name;
+          trHead.appendChild(thDoc);
+        }
+        var thMeta = document.createElement("th");
+        thMeta.textContent = "Meta (final)";
+        trHead.appendChild(thMeta);
+        var thDiff = document.createElement("th");
+        thDiff.textContent = "Diff";
+        trHead.appendChild(thDiff);
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+
+        // Localisation rubric OK
+        (function () {
+          var tr = document.createElement("tr");
+          var tdLabel = document.createElement("td");
+          tdLabel.className = "field-label";
+          tdLabel.textContent = "Localisation rubric OK?";
+          tr.appendChild(tdLabel);
+
+          for (var i = 0; i < doctors.length; i++) {
+            var tdDoc = document.createElement("td");
+            tdDoc.className = "doctor-cell";
+            var ans = doctors[i].answersByCaseId[caseId];
+            var val = null;
+            if (ans && typeof ans.localisation_rubric_ok !== "undefined") {
+              var b = normalizeBoolean(ans.localisation_rubric_ok);
+              if (typeof b === "boolean") val = b;
+            }
+            tdDoc.textContent = (typeof val === "boolean") ? (val ? "True" : "False") : "—";
+            tr.appendChild(tdDoc);
+          }
+
+          var tdMeta = document.createElement("td");
+          tdMeta.className = "meta-cell";
+          var sel = document.createElement("select");
+          sel.dataset.metaField = "localisation_rubric_ok";
+          var optEmpty = document.createElement("option");
+          optEmpty.value = "";
+          optEmpty.textContent = "-- select --";
+          sel.appendChild(optEmpty);
+          var optTrue = document.createElement("option");
+          optTrue.value = "true";
+          optTrue.textContent = "True";
+          sel.appendChild(optTrue);
+          var optFalse = document.createElement("option");
+          optFalse.value = "false";
+          optFalse.textContent = "False";
+          sel.appendChild(optFalse);
+          if (typeof metaEntry.localisation_rubric_ok === "boolean") {
+            sel.value = metaEntry.localisation_rubric_ok ? "true" : "false";
+          }
+          sel.addEventListener("change", function () {
+            var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+            if (!this.value) {
+              delete m.localisation_rubric_ok;
+            } else {
+              m.localisation_rubric_ok = (this.value === "true");
+            }
+            markMetaDirty();
+            updateCaseListStatus();
+          });
+          tdMeta.appendChild(sel);
+          tr.appendChild(tdMeta);
+
+          var tdDiff = document.createElement("td");
+          var dot = document.createElement("span");
+          dot.className = "diff-dot";
+          if (doctorsHaveDiff(caseId, function (doc) {
+            var ans = doc.answersByCaseId[caseId];
+            if (!ans || typeof ans.localisation_rubric_ok === "undefined") return undefined;
+            var b = normalizeBoolean(ans.localisation_rubric_ok);
+            if (typeof b === "boolean") return b;
+            return undefined;
+          })) {
+            dot.classList.add("has-diff");
+          }
+          tdDiff.appendChild(dot);
+          tr.appendChild(tdDiff);
+
+          tbody.appendChild(tr);
+        })();
+
+        // Localisation comment (no red diff)
+        (function () {
+          var tr = document.createElement("tr");
+          var tdLabel = document.createElement("td");
+          tdLabel.className = "field-label";
+          tdLabel.textContent = "Localisation comment";
+          tr.appendChild(tdLabel);
+
+          for (var i = 0; i < doctors.length; i++) {
+            var tdDoc = document.createElement("td");
+            tdDoc.className = "doctor-cell comment-cell";
+            var ans = doctors[i].answersByCaseId[caseId];
+            var val = ans && ans.localisation_comment;
+            tdDoc.textContent = val ? val : "—";
+            tr.appendChild(tdDoc);
+          }
+
+          var tdMeta = document.createElement("td");
+          tdMeta.className = "meta-cell";
+          var area = document.createElement("textarea");
+          area.rows = 2;
+          area.dataset.metaField = "localisation_comment";
+          if (typeof metaEntry.localisation_comment === "string") {
+            area.value = metaEntry.localisation_comment;
+          }
+          area.addEventListener("input", function () {
+            var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+            if (this.value.trim() === "") {
+              delete m.localisation_comment;
+            } else {
+              m.localisation_comment = this.value;
+            }
+            markMetaDirty();
+          });
+          tdMeta.appendChild(area);
+          tr.appendChild(tdMeta);
+
+          var tdDiff = document.createElement("td");
+          var dot = document.createElement("span");
+          dot.className = "diff-dot"; // comment, no red
+          tdDiff.appendChild(dot);
+          tr.appendChild(tdDiff);
+
+          tbody.appendChild(tr);
+        })();
+
+        // Diagnosis rubric OK
+        (function () {
+          var tr = document.createElement("tr");
+          var tdLabel = document.createElement("td");
+          tdLabel.className = "field-label";
+          tdLabel.textContent = "Diagnosis rubric OK?";
+          tr.appendChild(tdLabel);
+
+          for (var i = 0; i < doctors.length; i++) {
+            var tdDoc = document.createElement("td");
+            tdDoc.className = "doctor-cell";
+            var ans = doctors[i].answersByCaseId[caseId];
+            var val = null;
+            if (ans && typeof ans.diagnosis_rubric_ok !== "undefined") {
+              var b = normalizeBoolean(ans.diagnosis_rubric_ok);
+              if (typeof b === "boolean") val = b;
+            }
+            tdDoc.textContent = (typeof val === "boolean") ? (val ? "True" : "False") : "—";
+            tr.appendChild(tdDoc);
+          }
+
+          var tdMeta = document.createElement("td");
+          tdMeta.className = "meta-cell";
+          var sel = document.createElement("select");
+          sel.dataset.metaField = "diagnosis_rubric_ok";
+          var optEmpty = document.createElement("option");
+          optEmpty.value = "";
+          optEmpty.textContent = "-- select --";
+          sel.appendChild(optEmpty);
+          var optTrue = document.createElement("option");
+          optTrue.value = "true";
+          optTrue.textContent = "True";
+          sel.appendChild(optTrue);
+          var optFalse = document.createElement("option");
+          optFalse.value = "false";
+          optFalse.textContent = "False";
+          sel.appendChild(optFalse);
+          if (typeof metaEntry.diagnosis_rubric_ok === "boolean") {
+            sel.value = metaEntry.diagnosis_rubric_ok ? "true" : "false";
+          }
+          sel.addEventListener("change", function () {
+            var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+            if (!this.value) {
+              delete m.diagnosis_rubric_ok;
+            } else {
+              m.diagnosis_rubric_ok = (this.value === "true");
+            }
+            markMetaDirty();
+            updateCaseListStatus();
+          });
+          tdMeta.appendChild(sel);
+          tr.appendChild(tdMeta);
+
+          var tdDiff = document.createElement("td");
+          var dot = document.createElement("span");
+          dot.className = "diff-dot";
+          if (doctorsHaveDiff(caseId, function (doc) {
+            var ans = doc.answersByCaseId[caseId];
+            if (!ans || typeof ans.diagnosis_rubric_ok === "undefined") return undefined;
+            var b = normalizeBoolean(ans.diagnosis_rubric_ok);
+            if (typeof b === "boolean") return b;
+            return undefined;
+          })) {
+            dot.classList.add("has-diff");
+          }
+          tdDiff.appendChild(dot);
+          tr.appendChild(tdDiff);
+
+          tbody.appendChild(tr);
+        })();
+
+        // Diagnosis comment (no red)
+        (function () {
+          var tr = document.createElement("tr");
+          var tdLabel = document.createElement("td");
+          tdLabel.className = "field-label";
+          tdLabel.textContent = "Diagnosis comment";
+          tr.appendChild(tdLabel);
+
+          for (var i = 0; i < doctors.length; i++) {
+            var tdDoc = document.createElement("td");
+            tdDoc.className = "doctor-cell comment-cell";
+            var ans = doctors[i].answersByCaseId[caseId];
+            var val = ans && ans.diagnosis_comment;
+            tdDoc.textContent = val ? val : "—";
+            tr.appendChild(tdDoc);
+          }
+
+          var tdMeta = document.createElement("td");
+          tdMeta.className = "meta-cell";
+          var area = document.createElement("textarea");
+          area.rows = 2;
+          area.dataset.metaField = "diagnosis_comment";
+          if (typeof metaEntry.diagnosis_comment === "string") {
+            area.value = metaEntry.diagnosis_comment;
+          }
+          area.addEventListener("input", function () {
+            var m = metaByCaseId[caseId] || (metaByCaseId[caseId] = { case_id: caseId });
+            if (this.value.trim() === "") {
+              delete m.diagnosis_comment;
+            } else {
+              m.diagnosis_comment = this.value;
+            }
+            markMetaDirty();
+          });
+          tdMeta.appendChild(area);
+          tr.appendChild(tdMeta);
+
+          var tdDiff = document.createElement("td");
+          var dot = document.createElement("span");
+          dot.className = "diff-dot"; // comment, no red
+          tdDiff.appendChild(dot);
+          tr.appendChild(tdDiff);
+
+          tbody.appendChild(tr);
+        })();
+
+        table.appendChild(tbody);
+        rubricEvalContainer.appendChild(table);
+      }
+
+      function openEuroradForCase(caseObj) {
+        if (!caseObj || !caseObj.case_url) return;
+        var url = caseObj.case_url;
+        var features = "width=1200,height=800,menubar=yes,toolbar=yes,location=yes,scrollbars=yes,resizable=yes";
+        if (!euroradWindow || euroradWindow.closed) {
+          euroradWindow = window.open(url, "euroradWindow", features);
+        } else {
+          try {
+            euroradWindow.location.href = url;
+            euroradWindow.focus();
+          } catch (e) {
+            euroradWindow = window.open(url, "euroradWindow", features);
+          }
+        }
+      }
+
+      function switchCase(newIndex, openEuroradToo) {
+        if (!cases || cases.length === 0) return;
+        if (newIndex < 0 || newIndex >= cases.length) return;
+
+        currentCaseIndex = newIndex;
+        var caseObj = cases[currentCaseIndex];
+        var caseId = extractCaseId(caseObj.case_url, currentCaseIndex);
+
+        caseTitleEl.textContent = caseObj.case_title || ("Case " + caseId);
+        if (caseObj.case_url) {
+          caseUrlEl.textContent = caseObj.case_url;
+          caseUrlEl.href = caseObj.case_url;
+        } else {
+          caseUrlEl.textContent = "";
+          caseUrlEl.removeAttribute("href");
+        }
+        caseIndexLineEl.textContent = "Case " + (currentCaseIndex + 1) + " of " + cases.length;
+
+        initMetaForCase(caseId, caseObj);
+
+        renderDoctorPills();
+        renderGlobalTable(caseObj, caseId);
+        renderStepsTable(caseObj, caseId);
+        renderImagingSection(caseObj, caseId);
+        renderRubricEvaluation(caseObj, caseId);
+        renderRubricReference(caseObj);
+
+        updateCaseListStatus();
+        updateHeaderCounts();
+        updatePrevNextButtons();
+
+        if (openEuroradToo) {
+          openEuroradForCase(caseObj);
+        }
+      }
+
+      function exportMajorityJson() {
+        if (!cases || cases.length === 0) {
+          alert("No questions JSON loaded.");
+          return;
+        }
+        if (!doctors || doctors.length === 0) {
+          alert("Please load at least one result JSON before exporting majority JSON.");
+          return;
+        }
+        var answers = [];
+        for (var i = 0; i < cases.length; i++) {
+          var caseObj = cases[i];
+          var caseId = extractCaseId(caseObj.case_url, i);
+          var majorityEntry = getMajorityEntryForCase(caseId, caseObj);
+          answers.push(majorityEntry);
+        }
+        var payload = {
+          dataset_id: datasetId || "unknown_dataset",
+          answers: answers,
+          exported_at: new Date().toISOString()
+        };
+        var jsonStr = JSON.stringify(payload, null, 2);
+        var blob = new Blob([jsonStr], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        var timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        a.href = url;
+        a.download = "result_majority_" + timestamp + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function mergeMajorityAndMeta(caseId, caseObj) {
+        var majorityEntry = getMajorityEntryForCase(caseId, caseObj);
+        var metaEntry = metaByCaseId[caseId];
+        if (!metaEntry) {
+          return majorityEntry;
+        }
+        var out = { case_id: caseId };
+
+        function pickScalar(field) {
+          if (typeof metaEntry[field] !== "undefined" && metaEntry[field] !== null) {
+            out[field] = metaEntry[field];
+          } else if (typeof majorityEntry[field] !== "undefined" && majorityEntry[field] !== null) {
+            out[field] = majorityEntry[field];
+          }
+        }
+
+        pickScalar("difficulty");
+        pickScalar("rarity");
+        pickScalar("discard");
+        pickScalar("red_flag_exam");
+        pickScalar("comment");
+        pickScalar("localisation_rubric_ok");
+        pickScalar("diagnosis_rubric_ok");
+        pickScalar("localisation_comment");
+        pickScalar("diagnosis_comment");
+
+        function mergeMapField(fieldName) {
+          var metaMap = metaEntry[fieldName] || {};
+          var majMap = majorityEntry[fieldName] || {};
+          var merged = {};
+          var keys = {};
+          for (var k in majMap) {
+            if (Object.prototype.hasOwnProperty.call(majMap, k)) keys[k] = true;
+          }
+          for (var k2 in metaMap) {
+            if (Object.prototype.hasOwnProperty.call(metaMap, k2)) keys[k2] = true;
+          }
+          for (var key in keys) {
+            if (!Object.prototype.hasOwnProperty.call(keys, key)) continue;
+            if (typeof metaMap[key] !== "undefined") {
+              merged[key] = metaMap[key];
+            } else {
+              merged[key] = majMap[key];
+            }
+          }
+          if (Object.keys(merged).length > 0) {
+            out[fieldName] = merged;
+          }
+        }
+
+        mergeMapField("steps_essential");
+        mergeMapField("imaging_preferred_order");
+        mergeMapField("imaging_meta_info_ok");
+        mergeMapField("imaging_meta_info_comment");
+
+        out.complete = isMetaComplete(out, caseObj);
+        return out;
+      }
+
+      function exportMetaJson() {
+        if (!cases || cases.length === 0) {
+          alert("No questions JSON loaded.");
+          return;
+        }
+        if (!doctors || doctors.length === 0) {
+          alert("Please load at least one result JSON before exporting meta JSON.");
+          return;
+        }
+        var answers = [];
+        for (var i = 0; i < cases.length; i++) {
+          var caseObj = cases[i];
+          var caseId = extractCaseId(caseObj.case_url, i);
+          var merged = mergeMajorityAndMeta(caseId, caseObj);
+          answers.push(merged);
+        }
+        var payload = {
+          dataset_id: datasetId || "unknown_dataset",
+          answers: answers,
+          exported_at: new Date().toISOString()
+        };
+        var jsonStr = JSON.stringify(payload, null, 2);
+        var blob = new Blob([jsonStr], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        var timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        a.href = url;
+        a.download = "result_meta_final_" + timestamp + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function handleDatasetFile(file) {
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (evt) {
+          try {
+            var text = evt.target.result;
+            var data = JSON.parse(text);
+            if (!Array.isArray(data)) {
+              alert("Questions JSON root must be an array of cases.");
+              return;
+            }
+            cases = data;
+            if (!cases.length) {
+              alert("No cases found in questions JSON.");
+              return;
+            }
+            currentCaseIndex = 0;
+            buildCaseList();
+            updateHeaderCounts();
+            updatePrevNextButtons();
+            loadStatusEl.textContent = "Loaded " + cases.length + " cases from " + file.name + ". Now load 1–N result JSON files.";
+            if (doctors && doctors.length > 0) {
+              maybeLoadMetaFromLocalStorage();
+              switchCase(currentCaseIndex, false);
+            }
+          } catch (e) {
+            console.error("Failed to parse questions JSON:", e);
+            alert("Failed to parse questions JSON. Please check the file format.");
+          }
+        };
+        reader.onerror = function () {
+          alert("Failed to read questions JSON file.");
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      function handleResultFile(file) {
+        if (!file) return;
+        if (!cases || cases.length === 0) {
+          alert("Please load the questions JSON before adding result JSON files.");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (evt) {
+          try {
+            var text = evt.target.result;
+            var data = JSON.parse(text);
+            if (!data || !Array.isArray(data.answers)) {
+              alert("Result JSON " + file.name + " does not contain an 'answers' array.");
+              return;
+            }
+            var thisDatasetId = data.dataset_id || null;
+            if (!datasetId && thisDatasetId) {
+              datasetId = thisDatasetId;
+            } else if (datasetId && thisDatasetId && datasetId !== thisDatasetId) {
+              var proceed = window.confirm("Dataset ID mismatch: current dataset '" + datasetId + "', file '" + file.name + "' has '" + thisDatasetId + "'. Continue loading?");
+              if (!proceed) return;
+            }
+
+            var answersByCaseId = {};
+            for (var i = 0; i < data.answers.length; i++) {
+              var a = data.answers[i];
+              if (!a || !a.case_id) continue;
+              var cid = String(a.case_id);
+              answersByCaseId[cid] = normalizeAnswerEntry(a);
+            }
+
+            var docIndex = doctors.length;
+            var defaultName = "Doc " + String.fromCharCode(65 + docIndex);
+            doctors.push({
+              id: "doc_" + (docIndex + 1),
+              name: defaultName,
+              sourceFileName: file.name,
+              answersByCaseId: answersByCaseId
+            });
+
+            loadStatusEl.textContent = "Loaded result file: " + file.name;
+            updateHeaderCounts();
+            renderDoctorPills();
+
+            if (datasetId && !autosaveTimerStarted) {
+              autosaveTimerStarted = true;
+              setInterval(autoSaveTick, autosaveInterval);
+            }
+
+            if (datasetId) {
+              maybeLoadMetaFromLocalStorage();
+            }
+
+            if (cases && cases.length > 0 && caseListEl.children.length > 0) {
+              if (currentCaseIndex < 0 || currentCaseIndex >= cases.length) currentCaseIndex = 0;
+              switchCase(currentCaseIndex, false);
+            }
+          } catch (e) {
+            console.error("Failed to parse result JSON:", e);
+            alert("Failed to parse result JSON file: " + file.name);
+          }
+        };
+        reader.onerror = function () {
+          alert("Failed to read result JSON file: " + file.name);
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      function initEventListeners() {
+        btnPrevCase.addEventListener("click", function () {
+          if (!cases || cases.length === 0) return;
+          var target = currentCaseIndex - 1;
+          if (target >= 0) {
+            switchCase(target, true);
+          }
+        });
+
+        btnNextCase.addEventListener("click", function () {
+          if (!cases || cases.length === 0) return;
+          var target = currentCaseIndex + 1;
+          if (target < cases.length) {
+            switchCase(target, true);
+          }
+        });
+
+        btnOpenEurorad.addEventListener("click", function () {
+          if (!cases || cases.length === 0) return;
+          var caseObj = cases[currentCaseIndex];
+          openEuroradForCase(caseObj);
+        });
+
+        btnLoadDataset.addEventListener("click", function () {
+          datasetFileInput.value = "";
+          datasetFileInput.click();
+        });
+
+        btnAddResults.addEventListener("click", function () {
+          resultsFileInput.value = "";
+          resultsFileInput.click();
+        });
+
+        datasetFileInput.addEventListener("change", function (evt) {
+          var file = evt.target.files && evt.target.files[0];
+          handleDatasetFile(file);
+        });
+
+        resultsFileInput.addEventListener("change", function (evt) {
+          var files = evt.target.files ? Array.prototype.slice.call(evt.target.files) : [];
+          for (var i = 0; i < files.length; i++) {
+            handleResultFile(files[i]);
+          }
+        });
+
+        btnExportMajority.addEventListener("click", function () {
+          exportMajorityJson();
+        });
+
+        btnExportMeta.addEventListener("click", function () {
+          exportMetaJson();
+        });
+
+        btnClearMeta.addEventListener("click", function () {
+          clearMetaMemory();
+        });
+      }
+
+      function init() {
+        updateHeaderCounts();
+        updatePrevNextButtons();
+        initEventListeners();
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>
