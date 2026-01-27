@@ -166,6 +166,14 @@
     .rank-option {
       margin-right: 6px;
     }
+    .level-row {
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .level-label {
+      font-weight: 600;
+      margin-right: 4px;
+    }
     #localisation-reference dl {
       margin: 0;
       font-size: 13px;
@@ -179,12 +187,8 @@
     #localisation-levels {
       font-size: 13px;
     }
-    #localisation-levels .level-row {
-      margin-bottom: 4px;
-    }
-    #localisation-levels .level-label {
-      font-weight: 600;
-      margin-right: 4px;
+    #diagnosis-rubric {
+      font-size: 13px;
     }
     button {
       padding: 6px 10px;
@@ -511,8 +515,16 @@
         var parts = [];
         if (meta.modality) parts.push("Modality: " + meta.modality);
         if (meta.acquisition) parts.push("Acquisition: " + meta.acquisition);
+        if (meta.view) parts.push("View: " + meta.view);
         if (meta.imaged_region) parts.push("Region: " + meta.imaged_region);
         if (meta.body_part) parts.push("Body part: " + meta.body_part);
+        if (Object.prototype.hasOwnProperty.call(meta, "time_past")) {
+          var timePastVal = meta.time_past;
+          parts.push("Image age (months ago): " + (timePastVal === null ? "null" : String(timePastVal)));
+        }
+        if (meta.contrast !== null && typeof meta.contrast !== "undefined" && meta.contrast !== "") {
+          parts.push("Contrast: " + meta.contrast);
+        }
         return parts.length > 0 ? parts.join(" | ") : "No meta info provided.";
       }
 
@@ -612,8 +624,10 @@
                   copy.discard = discardVal;
                 }
               }
-              if (typeof a.red_flag_exam !== "undefined") {
-                copy.red_flag_exam = a.red_flag_exam;
+              if (typeof a.red_flag_exam === "string") {
+                if (a.red_flag_exam.trim() !== "") {
+                  copy.red_flag_exam = a.red_flag_exam;
+                }
               }
               if (typeof a.comment !== "undefined") {
                 copy.comment = a.comment;
@@ -714,8 +728,10 @@
             if (typeof entry.discard !== "undefined") {
               out.discard = entry.discard;
             }
-            if (typeof entry.red_flag_exam !== "undefined") {
-              out.red_flag_exam = entry.red_flag_exam;
+            if (typeof entry.red_flag_exam === "string") {
+              if (entry.red_flag_exam.trim() !== "") {
+                out.red_flag_exam = entry.red_flag_exam;
+              }
             }
             if (typeof entry.comment !== "undefined") {
               out.comment = entry.comment;
@@ -991,7 +1007,8 @@
 
           var label = document.createElement("label");
           var figureLabel = exam.figure ? exam.figure + ": " : "";
-          label.textContent = figureLabel + (exam.modality || "Imaging examination");
+          var examModality = exam.modality || (exam.meta_info && exam.meta_info.modality) || "Imaging examination";
+          label.textContent = figureLabel + examModality;
           wrapper.appendChild(label);
 
           var metaInfoDisplay = document.createElement("div");
@@ -1272,9 +1289,9 @@
           delete entry.discard;
         }
 
-        // red flag exam
+        // red flag exam (always export the field once the case is visited)
         var redFlagVal = redFlagInput.value;
-        if (redFlagVal && redFlagVal.trim() !== "") {
+        if (typeof redFlagVal === "string") {
           entry.red_flag_exam = redFlagVal;
         } else {
           delete entry.red_flag_exam;
@@ -1610,8 +1627,10 @@
           if (typeof entry.discard !== "undefined") {
             out.discard = entry.discard;
           }
-          if (typeof entry.red_flag_exam !== "undefined") {
-            out.red_flag_exam = entry.red_flag_exam;
+          if (typeof entry.red_flag_exam === "string") {
+            if (entry.red_flag_exam.trim() !== "") {
+              out.red_flag_exam = entry.red_flag_exam;
+            }
           }
           if (typeof entry.comment !== "undefined") {
             out.comment = entry.comment;
