@@ -1126,6 +1126,15 @@
       if (!update.changed_fields || typeof update.changed_fields !== "object" || Array.isArray(update.changed_fields)) update.changed_fields = {};
       if (typeof update.review_required !== "boolean") update.review_required = Object.keys(update.changed_fields).length > 0;
       if (typeof update.confirmed !== "boolean") update.confirmed = false;
+      if (typeof update.review_state !== "string" || !update.review_state) {
+        update.review_state = update.confirmed ? "confirmed" : "pending";
+      }
+      if (["pending", "confirmed", "rejected"].indexOf(update.review_state) === -1) {
+        update.review_state = update.confirmed ? "confirmed" : "pending";
+      }
+      update.confirmed = update.review_state === "confirmed";
+      if (typeof update.manual_edit_done !== "boolean") update.manual_edit_done = false;
+      if (!Array.isArray(update.manual_edit_fields)) update.manual_edit_fields = [];
       if (!Array.isArray(update.doctor_feedback)) update.doctor_feedback = [];
       if (!Array.isArray(update.applied_comments)) update.applied_comments = [];
       if (!Array.isArray(update.unresolved_comments)) update.unresolved_comments = [];
@@ -1361,12 +1370,53 @@
     return caseObj.meta_review.rubric_updates[sectionName] || null;
   }
 
-  function markUpdateUnconfirmed(caseObj, kind, key) {
-    var update = kind === "meta" ? getMetaUpdate(caseObj, Number(key) - 1) : getRubricUpdate(caseObj, key);
-    if (update && hasActionableUpdate(update) && update.confirmed === true) {
-      update.confirmed = false;
-      caseObj.meta_review.last_updated = nowIso();
+  function getUpdateDecision(update) {
+    if (!update) return "pending";
+    if (typeof update.review_state === "string" && ["pending", "confirmed", "rejected"].indexOf(update.review_state) !== -1) {
+      return update.review_state;
     }
+    return update.confirmed === true ? "confirmed" : "pending";
+  }
+
+  function setUpdateDecision(caseObj, kind, key, decision) {
+    var update = kind === "meta" ? getMetaUpdate(caseObj, Number(key) - 1) : getRubricUpdate(caseObj, key);
+    if (!update) return null;
+    update.review_state = decision || "pending";
+    if (["pending", "confirmed", "rejected"].indexOf(update.review_state) === -1) update.review_state = "pending";
+    update.confirmed = update.review_state === "confirmed";
+    if (update.review_state !== "rejected") {
+      update.manual_edit_done = false;
+      update.manual_edit_fields = [];
+    }
+    if (caseObj && caseObj.meta_review) caseObj.meta_review.last_updated = nowIso();
+    return update;
+  }
+
+  function isUpdateResolved(update) {
+    if (!hasActionableUpdate(update)) return true;
+    var decision = getUpdateDecision(update);
+    if (decision === "confirmed") return true;
+    if (decision === "rejected") return update.manual_edit_done === true;
+    return false;
+  }
+
+  function markUpdateUnconfirmed(caseObj, kind, key, fieldName) {
+    var update = kind === "meta" ? getMetaUpdate(caseObj, Number(key) - 1) : getRubricUpdate(caseObj, key);
+    if (!update || !hasActionableUpdate(update)) return;
+    var decision = getUpdateDecision(update);
+    if (decision === "confirmed") {
+      update.review_state = "pending";
+      update.confirmed = false;
+      update.manual_edit_done = false;
+      update.manual_edit_fields = [];
+    } else if (decision === "rejected") {
+      update.manual_edit_done = true;
+      if (!Array.isArray(update.manual_edit_fields)) update.manual_edit_fields = [];
+      if (fieldName && update.manual_edit_fields.indexOf(String(fieldName)) === -1) {
+        update.manual_edit_fields.push(String(fieldName));
+      }
+    }
+    if (caseObj && caseObj.meta_review) caseObj.meta_review.last_updated = nowIso();
   }
 
   function validateCaseForGreenLight(caseObj) {
@@ -1380,8 +1430,9 @@
     var exams = Array.isArray(caseObj.imaging_examinations) ? caseObj.imaging_examinations : [];
     exams.forEach(function (exam, idx) {
       var update = getMetaUpdate(caseObj, idx);
-      if (hasActionableUpdate(update) && update.confirmed !== true) {
-        addIssue(getExamDisplayName(exam, idx) + " metainfo confirmation", "anchor-exam-" + idx);
+      if (hasActionableUpdate(update) && !isUpdateResolved(update)) {
+        var decision = getUpdateDecision(update);
+        addIssue(getExamDisplayName(exam, idx) + (decision === "rejected" ? " metainfo manual edit" : " metainfo review decision"), "anchor-exam-" + idx);
       }
     });
 
@@ -1390,8 +1441,9 @@
       { key: "Diagnosis", anchorId: "anchor-rubric-diagnosis" }
     ].forEach(function (item) {
       var update = getRubricUpdate(caseObj, item.key);
-      if (hasActionableUpdate(update) && update.confirmed !== true) {
-        addIssue(item.key + " rubric confirmation", item.anchorId);
+      if (hasActionableUpdate(update) && !isUpdateResolved(update)) {
+        var decision = getUpdateDecision(update);
+        addIssue(item.key + (decision === "rejected" ? " rubric manual edit" : " rubric review decision"), item.anchorId);
       }
     });
 
@@ -1424,8 +1476,9 @@
     var exams = Array.isArray(caseObj.imaging_examinations) ? caseObj.imaging_examinations : [];
     exams.forEach(function (exam, idx) {
       var update = getMetaUpdate(caseObj, idx);
-      if (hasActionableUpdate(update) && update.confirmed !== true) {
-        reviewItems.push({ label: getExamDisplayName(exam, idx) + " metainfo", anchorId: "anchor-exam-" + idx });
+      if (hasActionableUpdate(update) && !isUpdateResolved(update)) {
+        var decision = getUpdateDecision(update);
+        reviewItems.push({ label: getExamDisplayName(exam, idx) + (decision === "rejected" ? " metainfo manual edit" : " metainfo"), anchorId: "anchor-exam-" + idx });
       }
     });
 
@@ -1434,8 +1487,9 @@
       { key: "Diagnosis", label: "Diagnosis rubric", anchorId: "anchor-rubric-diagnosis" }
     ].forEach(function (item) {
       var update = getRubricUpdate(caseObj, item.key);
-      if (hasActionableUpdate(update) && update.confirmed !== true) {
-        reviewItems.push({ label: item.label, anchorId: item.anchorId });
+      if (hasActionableUpdate(update) && !isUpdateResolved(update)) {
+        var decision = getUpdateDecision(update);
+        reviewItems.push({ label: item.label + (decision === "rejected" ? " manual edit" : ""), anchorId: item.anchorId });
       }
     });
 
@@ -1854,7 +1908,13 @@
       if (config.rows) input.rows = config.rows;
     } else if (config.type === "select") {
       input = document.createElement("select");
-      (config.options || []).forEach(function (opt) {
+      var options = (config.options || []).slice();
+      var currentValue = config.value == null ? "" : String(config.value);
+      var hasCurrentValue = options.some(function (opt) { return String(opt.value) === currentValue; });
+      if (currentValue !== "" && !hasCurrentValue) {
+        options.unshift({ value: currentValue, label: currentValue });
+      }
+      options.forEach(function (opt) {
         var option = document.createElement("option");
         option.value = opt.value;
         option.textContent = opt.label;
@@ -1890,9 +1950,13 @@
     });
   }
 
-  function createUpdateBox(title, update, onToggle) {
+  function createUpdateBox(title, update, onDecision) {
     if (!update) return null;
     var actionable = hasActionableUpdate(update);
+    var decision = getUpdateDecision(update);
+    var manualDone = !!update.manual_edit_done;
+    var scopeText = /meta info/i.test(title) ? "this whole meta info block" : "this whole rubric block";
+
     var box = document.createElement("div");
     box.className = "comparison-box review";
     var head = document.createElement("div");
@@ -1900,9 +1964,24 @@
     var titleEl = document.createElement("span");
     titleEl.textContent = title;
     head.appendChild(titleEl);
+
     var badge = document.createElement("span");
-    badge.className = "badge " + (actionable ? (update.confirmed ? "green" : "amber") : "gray");
-    badge.textContent = actionable ? (update.confirmed ? "Confirmed" : "Needs confirmation") : "No suggestion";
+    if (!actionable) {
+      badge.className = "badge gray";
+      badge.textContent = "No suggestion";
+    } else if (decision === "confirmed") {
+      badge.className = "badge green";
+      badge.textContent = "Confirmed";
+    } else if (decision === "rejected" && manualDone) {
+      badge.className = "badge green";
+      badge.textContent = "Manual edit saved";
+    } else if (decision === "rejected") {
+      badge.className = "badge amber";
+      badge.textContent = "Rejected · edit required";
+    } else {
+      badge.className = "badge amber";
+      badge.textContent = "Needs decision";
+    }
     head.appendChild(badge);
     box.appendChild(head);
 
@@ -1945,27 +2024,48 @@
       });
     }
 
+    var note = document.createElement("div");
+    note.className = "inline-help";
+    note.style.marginTop = "8px";
     if (!changes.length) {
-      var note = document.createElement("div");
-      note.className = "inline-help";
       note.textContent = "No actionable stored suggestion. This does not block the green light.";
-      body.appendChild(note);
+    } else if (decision === "rejected" && manualDone) {
+      note.textContent = "Suggestion rejected. Manual edit recorded for " + scopeText + ".";
+    } else if (decision === "rejected") {
+      note.textContent = "Suggestion rejected. Manual edit now applies to " + scopeText + ". You only need to correct the parts that are actually wrong.";
+    } else {
+      note.textContent = "You can confirm the stored suggestion or reject it and edit " + scopeText + " yourself.";
     }
+    body.appendChild(note);
 
     if (actionable) {
-      var confirmWrap = document.createElement("label");
-      confirmWrap.style.display = "inline-flex";
-      confirmWrap.style.alignItems = "center";
-      confirmWrap.style.gap = "8px";
-      confirmWrap.style.marginTop = "10px";
-      confirmWrap.style.fontWeight = "700";
-      var checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.checked = update.confirmed === true;
-      checkbox.addEventListener("change", function () { onToggle(checkbox.checked); });
-      confirmWrap.appendChild(checkbox);
-      confirmWrap.appendChild(document.createTextNode("Confirmed"));
-      body.appendChild(confirmWrap);
+      var actions = document.createElement("div");
+      actions.className = "toolbar-row";
+      actions.style.marginTop = "10px";
+
+      var btnConfirm = document.createElement("button");
+      btnConfirm.type = "button";
+      btnConfirm.textContent = "Confirm suggestion";
+      btnConfirm.className = decision === "confirmed" ? "green" : "primary";
+      btnConfirm.addEventListener("click", function () { if (typeof onDecision === "function") onDecision("confirmed"); });
+      actions.appendChild(btnConfirm);
+
+      var btnReject = document.createElement("button");
+      btnReject.type = "button";
+      btnReject.textContent = "Reject · edit manually";
+      btnReject.className = decision === "rejected" ? "warning" : "ghost";
+      btnReject.addEventListener("click", function () { if (typeof onDecision === "function") onDecision("rejected"); });
+      actions.appendChild(btnReject);
+
+      var btnReset = document.createElement("button");
+      btnReset.type = "button";
+      btnReset.textContent = "Reset";
+      btnReset.className = "ghost";
+      btnReset.disabled = decision === "pending" && !manualDone;
+      btnReset.addEventListener("click", function () { if (typeof onDecision === "function") onDecision("pending"); });
+      actions.appendChild(btnReset);
+
+      body.appendChild(actions);
     }
 
     box.appendChild(body);
@@ -2209,9 +2309,12 @@
       var title = document.createElement("h4");
       title.textContent = getExamDisplayName(exam, index);
       card.appendChild(title);
+
+      var update = getMetaUpdate(caseObj, index);
+
       var topGrid = document.createElement("div");
       topGrid.className = "field-grid-3";
-      topGrid.appendChild(createInputFieldBlock({ label: "Figure", type: "text", value: exam.figure, onChange: function () { exam.figure = this.value; markDirty(); renderCurrentCase(); } }).wrapper);
+      topGrid.appendChild(createInputFieldBlock({ label: "Figure", type: "text", value: exam.figure, eventType: "change", onChange: function () { exam.figure = this.value; markDirty(); renderCurrentCase(); } }).wrapper);
       topGrid.appendChild(createInputFieldBlock({ label: "Modality", type: "text", value: exam.modality, onChange: function () { exam.modality = this.value; markDirty(); } }).wrapper);
       topGrid.appendChild(createInputFieldBlock({
         label: "Preferred order",
@@ -2224,12 +2327,14 @@
       }).wrapper);
       card.appendChild(topGrid);
       card.appendChild(createInputFieldBlock({ label: "Image caption", type: "textarea", rows: 2, value: exam.image_caption, onChange: function () { exam.image_caption = this.value; markDirty(); } }).wrapper);
+
       var metaTitle = document.createElement("div");
       metaTitle.style.fontSize = "13px";
       metaTitle.style.fontWeight = "700";
       metaTitle.style.margin = "10px 0 8px 0";
       metaTitle.textContent = "Meta info";
       card.appendChild(metaTitle);
+
       var metaGrid = document.createElement("div");
       metaGrid.className = "field-grid-6";
       [
@@ -2241,28 +2346,36 @@
         { key: "contrast", label: "Contrast", type: "select", options: [{ value: "", label: "—" }, { value: "YES", label: "YES" }, { value: "NO", label: "NO" }] }
       ].forEach(function (cfg) {
         var value = cfg.key === "time_past" ? (exam.meta_info.time_past == null ? "" : exam.meta_info.time_past) : exam.meta_info[cfg.key];
-        metaGrid.appendChild(createInputFieldBlock({
+        var fieldBlock = createInputFieldBlock({
           label: cfg.label,
           type: cfg.type,
           value: value,
           options: cfg.options,
-          eventType: cfg.type === "select" ? "change" : "input",
+          eventType: "change",
           onChange: function () {
             if (cfg.key === "time_past") exam.meta_info.time_past = parseFreeNumberOrText(this.value);
-            else exam.meta_info[cfg.key] = cfg.type === "select" ? this.value : this.value;
-            markUpdateUnconfirmed(caseObj, "meta", index + 1);
+            else exam.meta_info[cfg.key] = this.value;
+            markUpdateUnconfirmed(caseObj, "meta", index + 1, cfg.key);
             markDirty();
             renderCurrentCase();
           }
-        }).wrapper);
+        });
+        var fieldChange = update && update.changed_fields ? update.changed_fields[cfg.key] : null;
+        if (fieldChange) {
+          var fieldNote = document.createElement("div");
+          fieldNote.className = "inline-help";
+          fieldNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(fieldChange.before) + " · Suggested: " + stringifyForDisplay(fieldChange.after);
+          fieldBlock.wrapper.appendChild(fieldNote);
+        }
+        metaGrid.appendChild(fieldBlock.wrapper);
       });
       card.appendChild(metaGrid);
+
       renderFieldComparison(card, "Doctor meta info OK flag", doctorEntries, function (answer) { return getIndexedLegacyValue(answer.imaging_meta_info_ok, index); });
       renderLongCommentComparison(card, "Doctor meta info comments", doctorEntries, function (answer) { return getIndexedLegacyValue(answer.imaging_meta_info_comment, index); });
-      var update = getMetaUpdate(caseObj, index);
       if (update) {
-        var updateBox = createUpdateBox("Stored meta info suggestion", update, function (checked) {
-          update.confirmed = !!checked;
+        var updateBox = createUpdateBox("Stored meta info suggestion", update, function (decision) {
+          setUpdateDecision(caseObj, "meta", index + 1, decision);
           markDirty();
           renderCurrentCase();
         });
@@ -2277,6 +2390,9 @@
     els.rubricDiagnosisEditor.innerHTML = "";
     var localisation = caseObj.rubric_0_to_3.Localisation;
     var diagnosis = caseObj.rubric_0_to_3.Diagnosis;
+    var locUpdate = getRubricUpdate(caseObj, "Localisation");
+    var diagUpdate = getRubricUpdate(caseObj, "Diagnosis");
+
     var locRefGrid = document.createElement("div");
     locRefGrid.className = "field-grid";
     [
@@ -2284,29 +2400,117 @@
       { key: "Organ/Region", label: "Reference answer · Organ/Region" },
       { key: "Specific Substructure/Segment", label: "Reference answer · Specific Substructure/Segment" }
     ].forEach(function (cfg) {
-      locRefGrid.appendChild(createInputFieldBlock({ label: cfg.label, type: "textarea", rows: 2, value: localisation.reference_answer[cfg.key], onChange: function () { localisation.reference_answer[cfg.key] = this.value; markUpdateUnconfirmed(caseObj, "rubric", "Localisation"); markDirty(); renderCurrentCase(); } }).wrapper);
+      var block = createInputFieldBlock({
+        label: cfg.label,
+        type: "textarea",
+        rows: 2,
+        value: localisation.reference_answer[cfg.key],
+        eventType: "change",
+        onChange: function () {
+          localisation.reference_answer[cfg.key] = this.value;
+          markUpdateUnconfirmed(caseObj, "rubric", "Localisation", "reference_answer." + cfg.key);
+          markDirty();
+          renderCurrentCase();
+        }
+      });
+      var refChange = locUpdate && locUpdate.changed_fields ? (locUpdate.changed_fields["reference_answer." + cfg.key] || null) : null;
+      if (refChange) {
+        var refNote = document.createElement("div");
+        refNote.className = "inline-help";
+        refNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(refChange.before) + " · Suggested: " + stringifyForDisplay(refChange.after);
+        block.wrapper.appendChild(refNote);
+      }
+      locRefGrid.appendChild(block.wrapper);
     });
     els.rubricLocalisationEditor.appendChild(locRefGrid);
+
     ["3", "2", "1", "0"].forEach(function (score) {
-      els.rubricLocalisationEditor.appendChild(createInputFieldBlock({ label: score + " points", type: "textarea", rows: 3, value: localisation[score], onChange: function () { localisation[score] = this.value; markUpdateUnconfirmed(caseObj, "rubric", "Localisation"); markDirty(); renderCurrentCase(); } }).wrapper);
+      var block = createInputFieldBlock({
+        label: score + " points",
+        type: "textarea",
+        rows: 3,
+        value: localisation[score],
+        eventType: "change",
+        onChange: function () {
+          localisation[score] = this.value;
+          markUpdateUnconfirmed(caseObj, "rubric", "Localisation", score);
+          markDirty();
+          renderCurrentCase();
+        }
+      });
+      var scoreChange = locUpdate && locUpdate.changed_fields ? (locUpdate.changed_fields[score] || null) : null;
+      if (scoreChange) {
+        var scoreNote = document.createElement("div");
+        scoreNote.className = "inline-help";
+        scoreNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(scoreChange.before) + " · Suggested: " + stringifyForDisplay(scoreChange.after);
+        block.wrapper.appendChild(scoreNote);
+      }
+      els.rubricLocalisationEditor.appendChild(block.wrapper);
     });
     renderFieldComparison(els.rubricLocalisationEditor, "Doctor localisation rubric OK", doctorEntries, function (answer) { return answer.localisation_rubric_ok; });
     renderLongCommentComparison(els.rubricLocalisationEditor, "Doctor localisation comments", doctorEntries, function (answer) { return answer.localisation_comment; });
-    var locUpdate = getRubricUpdate(caseObj, "Localisation");
     if (locUpdate) {
-      var locBox = createUpdateBox("Stored localisation rubric suggestion", locUpdate, function (checked) { locUpdate.confirmed = !!checked; markDirty(); renderCurrentCase(); });
+      var locBox = createUpdateBox("Stored localisation rubric suggestion", locUpdate, function (decision) {
+        setUpdateDecision(caseObj, "rubric", "Localisation", decision);
+        markDirty();
+        renderCurrentCase();
+      });
       if (locBox) els.rubricLocalisationEditor.appendChild(locBox);
     }
 
-    els.rubricDiagnosisEditor.appendChild(createInputFieldBlock({ label: "Reference answer", type: "textarea", rows: 2, value: diagnosis.reference_answer, onChange: function () { diagnosis.reference_answer = this.value; markUpdateUnconfirmed(caseObj, "rubric", "Diagnosis"); markDirty(); renderCurrentCase(); } }).wrapper);
+    var diagRefBlock = createInputFieldBlock({
+      label: "Reference answer",
+      type: "textarea",
+      rows: 2,
+      value: diagnosis.reference_answer,
+      eventType: "change",
+      onChange: function () {
+        diagnosis.reference_answer = this.value;
+        markUpdateUnconfirmed(caseObj, "rubric", "Diagnosis", "reference_answer");
+        markDirty();
+        renderCurrentCase();
+      }
+    });
+    var diagRefChange = diagUpdate && diagUpdate.changed_fields ? (diagUpdate.changed_fields.reference_answer || null) : null;
+    if (diagRefChange) {
+      var diagRefNote = document.createElement("div");
+      diagRefNote.className = "inline-help";
+      diagRefNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(diagRefChange.before) + " · Suggested: " + stringifyForDisplay(diagRefChange.after);
+      diagRefBlock.wrapper.appendChild(diagRefNote);
+    }
+    els.rubricDiagnosisEditor.appendChild(diagRefBlock.wrapper);
+
     ["3", "2", "1", "0"].forEach(function (score) {
-      els.rubricDiagnosisEditor.appendChild(createInputFieldBlock({ label: score + " points", type: "textarea", rows: 3, value: diagnosis[score], onChange: function () { diagnosis[score] = this.value; markUpdateUnconfirmed(caseObj, "rubric", "Diagnosis"); markDirty(); renderCurrentCase(); } }).wrapper);
+      var block = createInputFieldBlock({
+        label: score + " points",
+        type: "textarea",
+        rows: 3,
+        value: diagnosis[score],
+        eventType: "change",
+        onChange: function () {
+          diagnosis[score] = this.value;
+          markUpdateUnconfirmed(caseObj, "rubric", "Diagnosis", score);
+          markDirty();
+          renderCurrentCase();
+        }
+      });
+      var scoreChange = diagUpdate && diagUpdate.changed_fields ? (diagUpdate.changed_fields[score] || null) : null;
+      if (scoreChange) {
+        var scoreNote = document.createElement("div");
+        scoreNote.className = "inline-help";
+        scoreNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(scoreChange.before) + " · Suggested: " + stringifyForDisplay(scoreChange.after);
+        block.wrapper.appendChild(scoreNote);
+      }
+      els.rubricDiagnosisEditor.appendChild(block.wrapper);
     });
     renderFieldComparison(els.rubricDiagnosisEditor, "Doctor diagnosis rubric OK", doctorEntries, function (answer) { return answer.diagnosis_rubric_ok; });
     renderLongCommentComparison(els.rubricDiagnosisEditor, "Doctor diagnosis comments", doctorEntries, function (answer) { return answer.diagnosis_comment; });
-    var diagUpdate = getRubricUpdate(caseObj, "Diagnosis");
     if (diagUpdate) {
-      var diagBox = createUpdateBox("Stored diagnosis rubric suggestion", diagUpdate, function (checked) { diagUpdate.confirmed = !!checked; markDirty(); renderCurrentCase(); });
+      var diagBox = createUpdateBox("Stored diagnosis rubric suggestion", diagUpdate, function (decision) {
+        setUpdateDecision(caseObj, "rubric", "Diagnosis", decision);
+        markDirty();
+        renderCurrentCase();
+      });
       if (diagBox) els.rubricDiagnosisEditor.appendChild(diagBox);
     }
   }
