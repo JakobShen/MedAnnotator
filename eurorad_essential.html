@@ -1,0 +1,2789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Eurorad Meta Review Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+    body { display: flex; flex-direction: column; }
+    header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 16px;
+      background: #111827;
+      color: #f9fafb;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .header-left, .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+    .app-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .header-stat {
+      font-size: 12px;
+      color: #d1d5db;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      white-space: nowrap;
+    }
+    .header-status {
+      font-size: 12px;
+      color: #c7d2fe;
+      max-width: 360px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    main {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+    }
+    aside {
+      width: 340px;
+      max-width: 42vw;
+      min-width: 300px;
+      background: #fff;
+      border-right: 1px solid #e5e7eb;
+      overflow-y: auto;
+      padding: 12px;
+    }
+    #main-panel {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .panel-card, .sidebar-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+    .sidebar-card {
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .sidebar-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+    }
+    .panel-card {
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .panel-card > h3 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+    }
+    .toolbar-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    button, .button-like {
+      appearance: none;
+      border: 1px solid #cbd5e1;
+      background: #e5e7eb;
+      color: #111827;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.02s ease;
+    }
+    button:hover { background: #dbe2ea; }
+    button:active { transform: translateY(1px); }
+    button.primary {
+      background: #2563eb;
+      color: #fff;
+      border-color: #1d4ed8;
+    }
+    button.primary:hover { background: #1d4ed8; }
+    button.green {
+      background: #16a34a;
+      color: #fff;
+      border-color: #15803d;
+    }
+    button.green:hover { background: #15803d; }
+    button.warning {
+      background: #f59e0b;
+      color: #111827;
+      border-color: #d97706;
+    }
+    button.warning:hover { background: #d97706; color: #fff; }
+    button.ghost {
+      background: #fff;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      color: #111827;
+      background: #fff;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 76px;
+      white-space: pre-wrap;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.18);
+    }
+    .field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .field-label-row label {
+      margin-bottom: 0;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .field-input-slot {
+      position: relative;
+    }
+    .field-input-slot.has-inline-badge input,
+    .field-input-slot.has-inline-badge select {
+      padding-right: 84px;
+    }
+    .field-inline-badge {
+      position: absolute;
+      top: 50%;
+      right: 40px;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 46px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    input.title-input {
+      font-size: 22px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      background: #f8fafc;
+    }
+    input.title-input:focus {
+      background: #fff;
+      border-color: #60a5fa;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .field-block {
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid #edf2f7;
+      background: #fbfdff;
+      border-radius: 10px;
+    }
+    .field-block.compact {
+      padding: 10px;
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .field-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .field-grid-6 {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .muted {
+      color: #6b7280;
+      font-size: 12px;
+    }
+    .tiny {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .summary-top {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .summary-kicker {
+      color: #6b7280;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .summary-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+    }
+    .badge.gray {
+      background: #f3f4f6;
+      color: #374151;
+      border-color: #e5e7eb;
+    }
+    .badge.red {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+    .badge.amber {
+      background: #fffbeb;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+    .badge.green {
+      background: #f0fdf4;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+    .status-line {
+      font-size: 12px;
+      margin-top: 6px;
+      color: #4b5563;
+      white-space: pre-wrap;
+    }
+    .status-line.error { color: #b91c1c; }
+    .status-line.success { color: #166534; }
+    .status-line.warning { color: #92400e; }
+    .project-file-row {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #e5e7eb;
+    }
+    .project-file-row:last-child {
+      border-bottom: 0;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .project-file-row-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+    .project-file-row-body {
+      font-size: 12px;
+      color: #6b7280;
+      white-space: pre-wrap;
+    }
+    .toggle-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #e5e7eb;
+      white-space: nowrap;
+    }
+    .toggle-inline input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+    }
+    .search-row {
+      display: flex;
+      gap: 8px;
+      flex-direction: column;
+    }
+    #case-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .case-item {
+      display: block;
+      width: 100%;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fff;
+      margin-bottom: 8px;
+      padding: 10px 10px 8px 10px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .case-item:hover { background: #f8fbff; }
+    .case-item.active {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      box-shadow: inset 0 0 0 1px rgba(37,99,235,0.18);
+    }
+    .case-item-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .case-item-title {
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .case-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .case-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #cbd5e1;
+      flex: 0 0 auto;
+      margin-top: 3px;
+    }
+    .case-dot.green { background: #16a34a; }
+    .case-dot.gray { background: #94a3b8; }
+    .case-dot.amber { background: #f59e0b; }
+    .case-subline {
+      font-size: 11px;
+      color: #6b7280;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .case-subbadge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .case-subbadge.conflict {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+    .case-subbadge.green {
+      background: #f0fdf4;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+    details.panel-card summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 16px;
+      list-style: none;
+    }
+    details.panel-card summary::-webkit-details-marker { display: none; }
+    .details-body {
+      margin-top: 12px;
+    }
+    .comparison-box {
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      overflow: hidden;
+    }
+    .comparison-box.conflict {
+      border-color: #fca5a5;
+      background: #fff7f7;
+    }
+    .comparison-box.review {
+      border-color: #fcd34d;
+      background: #fffbeb;
+    }
+    .comparison-box.consensus {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+    .comparison-head {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      padding: 10px;
+    }
+    .comparison-entry {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px;
+      min-height: 58px;
+    }
+    .comparison-entry-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .comparison-entry-value {
+      font-size: 12px;
+      color: #111827;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .comparison-empty {
+      color: #9ca3af;
+      font-style: italic;
+    }
+    .anchor-target {
+      scroll-margin-top: 16px;
+    }
+    .conflict-summary-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .jump-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .jump-chip.review {
+      border-color: #fde68a;
+      background: #fffbeb;
+      color: #92400e;
+    }
+    .step-card, .exam-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #fcfdff;
+    }
+    .step-card h4, .exam-card h4 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .rubric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .rubric-subcard {
+      border: 1px solid #e5e7eb;
+      background: #fbfdff;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .rubric-subcard h4 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+    }
+    .doctor-raw-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #fcfdff;
+    }
+    .doctor-raw-card h4 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+    }
+    .raw-json {
+      margin: 0;
+      padding: 10px;
+      background: #0f172a;
+      color: #e5e7eb;
+      border-radius: 10px;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .empty-state {
+      padding: 26px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .pill-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .link-button {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      color: #1d4ed8;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .link-button:hover {
+      text-decoration: underline;
+      background: none;
+    }
+    .inline-help {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+      line-height: 1.45;
+    }
+    @media (max-width: 1160px) {
+      .field-grid,
+      .field-grid-3,
+      .meta-grid,
+      .rubric-grid {
+        grid-template-columns: 1fr;
+      }
+      .field-grid-6 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 900px) {
+      main { flex-direction: column; }
+      aside {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        border-right: 0;
+        border-bottom: 1px solid #e5e7eb;
+        max-height: 45vh;
+      }
+      #main-panel { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <span class="app-title">Eurorad Meta Review Tool</span>
+      <span class="header-stat" id="header-case-count">No cases loaded</span>
+      <span class="header-stat" id="header-green-count">Green lights: 0</span>
+      <span class="header-status" id="header-status">Load original cases or a meta review export.</span>
+    </div>
+    <div class="header-right">
+      <label class="toggle-inline"><input type="checkbox" id="auto-open-toggle" checked> Auto-open Eurorad on switch</label>
+      <button id="btn-prev-case">Previous</button>
+      <button id="btn-next-case">Next</button>
+      <button id="btn-open-eurorad" class="primary">Open Eurorad</button>
+      <button id="btn-save-draft">Save Draft</button>
+      <button id="btn-export-json">Export JSON</button>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div class="sidebar-card">
+        <h3>Project files</h3>
+        <div class="toolbar-row">
+          <button id="btn-load-cases" class="primary">Load Original Cases</button>
+          <button id="btn-load-meta">Load Meta Review</button>
+        </div>
+        <div class="toolbar-row">
+          <button id="btn-load-doctor-1">Load Doctor 1</button>
+          <button id="btn-load-doctor-2">Load Doctor 2</button>
+          <button id="btn-load-doctor-3">Load Doctor 3</button>
+        </div>
+        <div class="toolbar-row">
+          <button id="btn-restore-draft">Restore Autosave</button>
+          <button id="btn-clear-draft" class="ghost">Clear Draft</button>
+        </div>
+        <div id="project-file-status"></div>
+        <div id="load-message" class="status-line"></div>
+      </div>
+
+      <div class="sidebar-card">
+        <h3>Cases</h3>
+        <div class="search-row">
+          <input type="text" id="case-search" placeholder="Search by case ID or title">
+          <select id="case-filter">
+            <option value="all">All cases</option>
+            <option value="conflict">Conflict cases</option>
+            <option value="review">Needs review</option>
+            <option value="green">Green lights</option>
+            <option value="pending">Not green</option>
+          </select>
+        </div>
+      </div>
+
+      <ul id="case-list"></ul>
+    </aside>
+
+    <section id="main-panel">
+      <div class="panel-card empty-state" id="empty-state">
+        Load the original neuro_399-style case JSON, then load up to three doctor annotation JSON files.<br>
+        You can also load a previously exported meta review JSON directly.<br>
+        The current draft is auto-saved in the browser and can be restored from the left panel.
+      </div>
+
+      <div id="case-content" hidden>
+        <div class="panel-card" id="summary-card">
+          <div class="summary-top">
+            <div style="min-width: 0; flex: 1 1 auto;">
+              <div class="summary-kicker">Case <span id="summary-case-index"></span> · ID <span id="summary-case-id"></span></div>
+              <input type="text" id="case-title-input" class="title-input">
+              <div class="pill-row">
+                <a id="case-url-link" href="#" target="_blank" rel="noopener noreferrer"></a>
+              </div>
+            </div>
+            <div class="pill-row" style="justify-content: flex-end;">
+              <button id="btn-green-light">Green light OFF</button>
+            </div>
+          </div>
+          <div class="summary-badges">
+            <span class="badge gray" id="badge-doctors">Doctors: 0</span>
+            <span class="badge red" id="badge-conflicts">Conflicts: 0</span>
+            <span class="badge amber" id="badge-review-items">Needs review: 0</span>
+            <span class="badge gray" id="badge-updated">Last updated: —</span>
+          </div>
+          <div id="conflict-summary" class="conflict-summary-list"></div>
+        </div>
+
+        <div class="panel-card" id="case-fields-card" hidden>
+          <h3>Case fields</h3>
+          <div class="field-block anchor-target" id="anchor-case-title">
+            <label for="case-title-input-secondary">Case title</label>
+            <input type="text" id="case-title-input-secondary">
+            <div class="inline-help">Editable final title. The current Eurorad URL stays unchanged.</div>
+          </div>
+
+          <div class="field-grid">
+            <div class="field-block anchor-target" id="anchor-demography"></div>
+            <div class="field-block anchor-target" id="anchor-difficulty"></div>
+            <div class="field-block anchor-target" id="anchor-rarity"></div>
+            <div class="field-block anchor-target" id="anchor-discard"></div>
+            <div class="field-block anchor-target" id="anchor-red-flag"></div>
+            <div class="field-block anchor-target" id="anchor-comment"></div>
+          </div>
+        </div>
+
+        <details class="panel-card" id="diagnostic-steps-card" open>
+          <summary>Diagnostic steps</summary>
+          <div class="details-body" id="diagnostic-steps-list"></div>
+        </details>
+
+        <details class="panel-card" id="imaging-card" open hidden>
+          <summary>Imaging examinations</summary>
+          <div class="details-body" id="imaging-list"></div>
+        </details>
+
+        <details class="panel-card" id="rubric-card" open hidden>
+          <summary>Rubric editor</summary>
+          <div class="details-body">
+            <div class="rubric-grid">
+              <div class="rubric-subcard anchor-target" id="anchor-rubric-localisation">
+                <h4>Localisation rubric</h4>
+                <div id="rubric-localisation-editor"></div>
+              </div>
+              <div class="rubric-subcard anchor-target" id="anchor-rubric-diagnosis">
+                <h4>Diagnosis rubric</h4>
+                <div id="rubric-diagnosis-editor"></div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="panel-card" id="doctor-raw-card" hidden>
+          <summary>Doctor annotations (raw)</summary>
+          <div class="details-body" id="doctor-raw-list"></div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <datalist id="difficulty-options">
+    <option value="normal"></option>
+    <option value="hard"></option>
+    <option value="extrem hard"></option>
+  </datalist>
+  <datalist id="rarity-options">
+    <option value="Common"></option>
+    <option value="Rare"></option>
+    <option value="Extrem Rare"></option>
+  </datalist>
+  <datalist id="discard-options">
+    <option value=""></option>
+    <option value="false"></option>
+    <option value="true"></option>
+  </datalist>
+  <datalist id="essential-options">
+    <option value=""></option>
+    <option value="essential"></option>
+    <option value="important"></option>
+    <option value="optional"></option>
+    <option value="unnecessary"></option>
+  </datalist>
+  <datalist id="contrast-options">
+    <option value=""></option>
+    <option value="YES"></option>
+    <option value="NO"></option>
+  </datalist>
+
+  <input type="file" id="input-load-cases" accept=".json,application/json" hidden>
+  <input type="file" id="input-load-meta" accept=".json,application/json" hidden>
+  <input type="file" id="input-load-doctor-1" accept=".json,application/json" hidden>
+  <input type="file" id="input-load-doctor-2" accept=".json,application/json" hidden>
+  <input type="file" id="input-load-doctor-3" accept=".json,application/json" hidden>
+
+  
+<script>
+(function () {
+  "use strict";
+
+  var DRAFT_KEY = "eurorad_meta_review_draft_v3";
+  var appState = {
+    workingCases: [],
+    pendingDoctorSources: [],
+    currentIndex: 0,
+    dirty: false,
+    euroradWindow: null,
+    caseFileName: "",
+    metaReviewFileName: ""
+  };
+
+  var storage = (function () {
+    var memoryStore = {};
+    try {
+      var probe = "__eurorad_meta_review_probe__";
+      window.localStorage.setItem(probe, "1");
+      window.localStorage.removeItem(probe);
+      return {
+        kind: "browser",
+        getItem: function (key) { return window.localStorage.getItem(key); },
+        setItem: function (key, value) { window.localStorage.setItem(key, value); },
+        removeItem: function (key) { window.localStorage.removeItem(key); }
+      };
+    } catch (err) {
+      return {
+        kind: "memory",
+        getItem: function (key) { return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null; },
+        setItem: function (key, value) { memoryStore[key] = String(value); },
+        removeItem: function (key) { delete memoryStore[key]; }
+      };
+    }
+  })();
+
+  var els = {
+    headerCaseCount: document.getElementById("header-case-count"),
+    headerGreenCount: document.getElementById("header-green-count"),
+    headerStatus: document.getElementById("header-status"),
+    autoOpenToggle: document.getElementById("auto-open-toggle"),
+    btnPrevCase: document.getElementById("btn-prev-case"),
+    btnNextCase: document.getElementById("btn-next-case"),
+    btnOpenEurorad: document.getElementById("btn-open-eurorad"),
+    btnSaveDraft: document.getElementById("btn-save-draft"),
+    btnExportJson: document.getElementById("btn-export-json"),
+    btnLoadCases: document.getElementById("btn-load-cases"),
+    btnLoadMeta: document.getElementById("btn-load-meta"),
+    btnLoadDoctor1: document.getElementById("btn-load-doctor-1"),
+    btnLoadDoctor2: document.getElementById("btn-load-doctor-2"),
+    btnLoadDoctor3: document.getElementById("btn-load-doctor-3"),
+    btnRestoreDraft: document.getElementById("btn-restore-draft"),
+    btnClearDraft: document.getElementById("btn-clear-draft"),
+    inputLoadCases: document.getElementById("input-load-cases"),
+    inputLoadMeta: document.getElementById("input-load-meta"),
+    inputLoadDoctor1: document.getElementById("input-load-doctor-1"),
+    inputLoadDoctor2: document.getElementById("input-load-doctor-2"),
+    inputLoadDoctor3: document.getElementById("input-load-doctor-3"),
+    projectFileStatus: document.getElementById("project-file-status"),
+    loadMessage: document.getElementById("load-message"),
+    caseSearch: document.getElementById("case-search"),
+    caseFilter: document.getElementById("case-filter"),
+    caseList: document.getElementById("case-list"),
+    emptyState: document.getElementById("empty-state"),
+    caseContent: document.getElementById("case-content"),
+    summaryCaseIndex: document.getElementById("summary-case-index"),
+    summaryCaseId: document.getElementById("summary-case-id"),
+    caseTitleInput: document.getElementById("case-title-input"),
+    caseTitleInputSecondary: document.getElementById("case-title-input-secondary"),
+    caseUrlLink: document.getElementById("case-url-link"),
+    btnGreenLight: document.getElementById("btn-green-light"),
+    badgeDoctors: document.getElementById("badge-doctors"),
+    badgeConflicts: document.getElementById("badge-conflicts"),
+    badgeReviewItems: document.getElementById("badge-review-items"),
+    badgeUpdated: document.getElementById("badge-updated"),
+    conflictSummary: document.getElementById("conflict-summary"),
+    anchorDemography: document.getElementById("anchor-demography"),
+    anchorDifficulty: document.getElementById("anchor-difficulty"),
+    anchorRarity: document.getElementById("anchor-rarity"),
+    anchorDiscard: document.getElementById("anchor-discard"),
+    anchorRedFlag: document.getElementById("anchor-red-flag"),
+    anchorComment: document.getElementById("anchor-comment"),
+    diagnosticStepsList: document.getElementById("diagnostic-steps-list"),
+    imagingList: document.getElementById("imaging-list"),
+    rubricLocalisationEditor: document.getElementById("rubric-localisation-editor"),
+    rubricDiagnosisEditor: document.getElementById("rubric-diagnosis-editor"),
+    doctorRawList: document.getElementById("doctor-raw-list")
+  };
+
+  function deepClone(value) {
+    if (typeof structuredClone === "function") return structuredClone(value);
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
+  function toHumanTime(isoString) {
+    if (!isoString) return "—";
+    try {
+      var d = new Date(isoString);
+      if (isNaN(d.getTime())) return String(isoString);
+      return d.toLocaleString();
+    } catch (err) {
+      return String(isoString);
+    }
+  }
+
+  function collapseWhitespace(value) {
+    return String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+  }
+
+  function hasFilledValue(value) {
+    if (typeof value === "string") return collapseWhitespace(value) !== "";
+    return value !== undefined && value !== null;
+  }
+
+  function isMissingValue(value) {
+    return !hasFilledValue(value);
+  }
+
+  function caseIdFromUrl(url, fallbackIndex) {
+    if (typeof url === "string") {
+      var match = url.match(/\/case\/(\d+)(?:\/)?$/);
+      if (match && match[1]) return match[1];
+    }
+    return "case_" + String(fallbackIndex || 0);
+  }
+
+  function getCaseId(caseObj, fallbackIndex) {
+    if (caseObj && caseObj.case_id) return String(caseObj.case_id);
+    return caseIdFromUrl(caseObj ? caseObj.case_url : "", fallbackIndex);
+  }
+
+  function stableStringify(value) {
+    if (value === undefined) return "__undefined__";
+    if (value === null) return "null";
+    if (typeof value === "string") return collapseWhitespace(value);
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    if (Array.isArray(value)) return "[" + value.map(stableStringify).join(",") + "]";
+    if (typeof value === "object") {
+      return "{" + Object.keys(value).sort().map(function (k) { return k + ":" + stableStringify(value[k]); }).join(",") + "}";
+    }
+    return String(value);
+  }
+
+  function parseDiscardValue(value) {
+    if (value === true || value === false || value === "") return value;
+    var text = collapseWhitespace(value).toLowerCase();
+    if (text === "true") return true;
+    if (text === "false") return false;
+    return "";
+  }
+
+  function parseFreeNumberOrText(text) {
+    var trimmed = String(text == null ? "" : text).trim();
+    if (trimmed === "") return null;
+    if (trimmed.toLowerCase() === "null") return null;
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+    return trimmed;
+  }
+
+  function normalizeDifficulty(value) {
+    var text = collapseWhitespace(value).toLowerCase();
+    if (!text) return undefined;
+    if (text === "extreme hard") return "extrem hard";
+    if (text === "extrem hard") return "extrem hard";
+    if (text === "hard") return "hard";
+    if (text === "normal") return "normal";
+    return text;
+  }
+
+  function normalizeRarity(value) {
+    var text = collapseWhitespace(value).toLowerCase();
+    if (!text) return undefined;
+    if (text === "common") return "Common";
+    if (text === "rare") return "Rare";
+    if (text === "extreme rare" || text === "extrem rare") return "Extrem Rare";
+    return collapseWhitespace(value);
+  }
+
+  function normalizeEssential(value) {
+    var text = collapseWhitespace(value).toLowerCase();
+    if (!text) return undefined;
+    if (text === "essential") return "essential";
+    if (text === "important") return "important";
+    if (text === "optional") return "optional";
+    if (text === "unnecessary") return "unnecessary";
+    return text;
+  }
+
+  function normalizeContrast(value) {
+    var text = collapseWhitespace(value).toUpperCase();
+    if (text === "YES" || text === "NO") return text;
+    return collapseWhitespace(value);
+  }
+
+  function getIndexedLegacyValue(mapObj, index) {
+    if (!mapObj || typeof mapObj !== "object") return undefined;
+    var key1 = String(index + 1);
+    if (Object.prototype.hasOwnProperty.call(mapObj, key1)) return mapObj[key1];
+    var key0 = String(index);
+    if (Object.prototype.hasOwnProperty.call(mapObj, key0)) return mapObj[key0];
+    return undefined;
+  }
+
+  function emptyMetaInfo() {
+    return {
+      modality: "",
+      acquisition: "",
+      view: "",
+      imaged_region: "",
+      time_past: null,
+      contrast: ""
+    };
+  }
+
+  function sanitizeMetaInfo(raw) {
+    var meta = raw && typeof raw === "object" ? deepClone(raw) : {};
+    var base = emptyMetaInfo();
+    Object.keys(base).forEach(function (key) {
+      if (!Object.prototype.hasOwnProperty.call(meta, key)) meta[key] = base[key];
+    });
+    ["modality", "acquisition", "view", "imaged_region"].forEach(function (key) {
+      if (typeof meta[key] !== "string") meta[key] = meta[key] == null ? "" : String(meta[key]);
+    });
+    if (meta.time_past !== null && typeof meta.time_past !== "string" && typeof meta.time_past !== "number") {
+      meta.time_past = meta.time_past == null ? null : String(meta.time_past);
+    }
+    if (typeof meta.contrast !== "string") meta.contrast = meta.contrast == null ? "" : String(meta.contrast);
+    return meta;
+  }
+
+  function sanitizeStep(raw) {
+    var step = raw && typeof raw === "object" ? deepClone(raw) : {};
+    if (typeof step.step !== "string") step.step = step.step == null ? "" : String(step.step);
+    if (typeof step.source !== "string") step.source = step.source == null ? "" : String(step.source);
+    if (typeof step.reason !== "string") step.reason = step.reason == null ? "" : String(step.reason);
+    if (typeof step.essential !== "string") step.essential = step.essential == null ? "" : String(step.essential);
+    return step;
+  }
+
+  function sanitizeImagingExam(raw) {
+    var exam = raw && typeof raw === "object" ? deepClone(raw) : {};
+    if (typeof exam.figure !== "string") exam.figure = exam.figure == null ? "" : String(exam.figure);
+    if (typeof exam.image_caption !== "string") exam.image_caption = exam.image_caption == null ? "" : String(exam.image_caption);
+    if (typeof exam.modality !== "string") exam.modality = exam.modality == null ? "" : String(exam.modality);
+    if (exam.preferred_order === undefined || exam.preferred_order === null || exam.preferred_order === "") exam.preferred_order = "";
+    else {
+      var parsed = Number(exam.preferred_order);
+      exam.preferred_order = isNaN(parsed) ? String(exam.preferred_order) : parsed;
+    }
+    exam.meta_info = sanitizeMetaInfo(exam.meta_info);
+    return exam;
+  }
+
+  function emptyLocalisationRubric() {
+    return {
+      reference_answer: {
+        "Laterality": "",
+        "Organ/Region": "",
+        "Specific Substructure/Segment": ""
+      },
+      "3": "",
+      "2": "",
+      "1": "",
+      "0": ""
+    };
+  }
+
+  function emptyDiagnosisRubric() {
+    return {
+      reference_answer: "",
+      "3": "",
+      "2": "",
+      "1": "",
+      "0": ""
+    };
+  }
+
+  function sanitizeRubric(rawRubric) {
+    var rubric = rawRubric && typeof rawRubric === "object" ? deepClone(rawRubric) : {};
+    if (!rubric.Localisation || typeof rubric.Localisation !== "object") rubric.Localisation = emptyLocalisationRubric();
+    if (!rubric.Diagnosis || typeof rubric.Diagnosis !== "object") rubric.Diagnosis = emptyDiagnosisRubric();
+    if (!rubric.Localisation.reference_answer || typeof rubric.Localisation.reference_answer !== "object") {
+      rubric.Localisation.reference_answer = emptyLocalisationRubric().reference_answer;
+    }
+    ["Laterality", "Organ/Region", "Specific Substructure/Segment"].forEach(function (key) {
+      if (typeof rubric.Localisation.reference_answer[key] !== "string") {
+        rubric.Localisation.reference_answer[key] = rubric.Localisation.reference_answer[key] == null ? "" : String(rubric.Localisation.reference_answer[key]);
+      }
+    });
+    ["3", "2", "1", "0"].forEach(function (key) {
+      if (typeof rubric.Localisation[key] !== "string") rubric.Localisation[key] = rubric.Localisation[key] == null ? "" : String(rubric.Localisation[key]);
+      if (typeof rubric.Diagnosis[key] !== "string") rubric.Diagnosis[key] = rubric.Diagnosis[key] == null ? "" : String(rubric.Diagnosis[key]);
+    });
+    if (typeof rubric.Diagnosis.reference_answer !== "string") rubric.Diagnosis.reference_answer = rubric.Diagnosis.reference_answer == null ? "" : String(rubric.Diagnosis.reference_answer);
+    return rubric;
+  }
+
+  function sanitizeUpdateMap(raw) {
+    var out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (key) {
+      var update = raw[key] && typeof raw[key] === "object" ? deepClone(raw[key]) : {};
+      if (typeof update.status !== "string") update.status = "";
+      if (!update.changed_fields || typeof update.changed_fields !== "object" || Array.isArray(update.changed_fields)) update.changed_fields = {};
+      if (typeof update.review_required !== "boolean") update.review_required = Object.keys(update.changed_fields).length > 0;
+      if (typeof update.confirmed !== "boolean") update.confirmed = false;
+      if (typeof update.review_state !== "string" || !update.review_state) {
+        update.review_state = update.confirmed ? "confirmed" : "pending";
+      }
+      if (["pending", "confirmed", "rejected"].indexOf(update.review_state) === -1) {
+        update.review_state = update.confirmed ? "confirmed" : "pending";
+      }
+      update.confirmed = update.review_state === "confirmed";
+      if (typeof update.manual_edit_done !== "boolean") update.manual_edit_done = false;
+      if (!Array.isArray(update.manual_edit_fields)) update.manual_edit_fields = [];
+      if (!Array.isArray(update.doctor_feedback)) update.doctor_feedback = [];
+      if (!Array.isArray(update.applied_comments)) update.applied_comments = [];
+      if (!Array.isArray(update.unresolved_comments)) update.unresolved_comments = [];
+      if (!Array.isArray(update.doctors_with_feedback)) update.doctors_with_feedback = [];
+      out[String(key)] = update;
+    });
+    return out;
+  }
+
+  function sanitizeMetaReview(metaReview) {
+    var mr = metaReview && typeof metaReview === "object" ? deepClone(metaReview) : {};
+    if (typeof mr.green_light !== "boolean") mr.green_light = false;
+    if (!mr.doctor_annotations || typeof mr.doctor_annotations !== "object" || Array.isArray(mr.doctor_annotations)) mr.doctor_annotations = {};
+    if (typeof mr.last_updated !== "string") mr.last_updated = "";
+    mr.meta_info_updates = sanitizeUpdateMap(mr.meta_info_updates);
+    mr.rubric_updates = sanitizeUpdateMap(mr.rubric_updates);
+    if (!mr.auto_resolutions || typeof mr.auto_resolutions !== "object" || Array.isArray(mr.auto_resolutions)) mr.auto_resolutions = {};
+    if (typeof mr.auto_resolutions.difficulty !== "boolean") mr.auto_resolutions.difficulty = false;
+    if (typeof mr.auto_resolutions.rarity !== "boolean") mr.auto_resolutions.rarity = false;
+    if (typeof mr.auto_resolutions.discard !== "boolean") mr.auto_resolutions.discard = false;
+    if (!mr.auto_resolutions.steps_essential || typeof mr.auto_resolutions.steps_essential !== "object" || Array.isArray(mr.auto_resolutions.steps_essential)) mr.auto_resolutions.steps_essential = {};
+    if (!mr.auto_resolutions.imaging_preferred_order || typeof mr.auto_resolutions.imaging_preferred_order !== "object" || Array.isArray(mr.auto_resolutions.imaging_preferred_order)) mr.auto_resolutions.imaging_preferred_order = {};
+    return mr;
+  }
+
+  function sanitizeCase(rawCase, fallbackIndex) {
+    var caseObj = rawCase && typeof rawCase === "object" ? deepClone(rawCase) : {};
+    if (typeof caseObj.case_url !== "string") caseObj.case_url = caseObj.case_url == null ? "" : String(caseObj.case_url);
+    if (typeof caseObj.case_title !== "string") caseObj.case_title = caseObj.case_title == null ? "" : String(caseObj.case_title);
+    if (typeof caseObj.difficulty !== "string") caseObj.difficulty = caseObj.difficulty == null ? "" : String(caseObj.difficulty);
+    if (typeof caseObj.demography !== "string") caseObj.demography = caseObj.demography == null ? "" : String(caseObj.demography);
+    if (typeof caseObj.red_flag_exam !== "string") caseObj.red_flag_exam = caseObj.red_flag_exam == null ? "" : String(caseObj.red_flag_exam);
+    if (typeof caseObj.rarity !== "string") caseObj.rarity = caseObj.rarity == null ? "" : String(caseObj.rarity);
+    if (!Object.prototype.hasOwnProperty.call(caseObj, "Discard")) caseObj.Discard = "";
+    if (!(caseObj.Discard === "" || typeof caseObj.Discard === "boolean")) caseObj.Discard = parseDiscardValue(caseObj.Discard);
+    if (typeof caseObj.comment !== "string") caseObj.comment = caseObj.comment == null ? "" : String(caseObj.comment);
+    if (!caseObj.diagnostic_steps || typeof caseObj.diagnostic_steps !== "object") caseObj.diagnostic_steps = { steps: [] };
+    if (!Array.isArray(caseObj.diagnostic_steps.steps)) caseObj.diagnostic_steps.steps = [];
+    caseObj.diagnostic_steps.steps = caseObj.diagnostic_steps.steps.map(sanitizeStep);
+    if (!Array.isArray(caseObj.imaging_examinations)) caseObj.imaging_examinations = [];
+    caseObj.imaging_examinations = caseObj.imaging_examinations.map(sanitizeImagingExam);
+    caseObj.rubric_0_to_3 = sanitizeRubric(caseObj.rubric_0_to_3);
+    caseObj.meta_review = sanitizeMetaReview(caseObj.meta_review);
+    caseObj.case_id = getCaseId(caseObj, fallbackIndex);
+    return caseObj;
+  }
+
+  function sanitizeCasesArray(rawArray) {
+    if (!Array.isArray(rawArray)) return [];
+    return rawArray.map(function (caseObj, idx) { return sanitizeCase(caseObj, idx); });
+  }
+
+  function getCurrentCase() {
+    if (!appState.workingCases.length) return null;
+    if (appState.currentIndex < 0) appState.currentIndex = 0;
+    if (appState.currentIndex >= appState.workingCases.length) appState.currentIndex = appState.workingCases.length - 1;
+    return appState.workingCases[appState.currentIndex];
+  }
+
+  function setLoadMessage(text, type) {
+    els.loadMessage.textContent = text || "";
+    els.loadMessage.className = "status-line" + (type ? " " + type : "");
+    els.headerStatus.textContent = text || "Ready.";
+  }
+
+  function getDoctorEntries(caseObj) {
+    var annotations = caseObj && caseObj.meta_review && caseObj.meta_review.doctor_annotations ? caseObj.meta_review.doctor_annotations : {};
+    return Object.keys(annotations).sort().map(function (label) {
+      var item = annotations[label] || {};
+      return {
+        label: label,
+        source_file: item.source_file || "",
+        dataset_id: item.dataset_id || "",
+        exported_at: item.exported_at || "",
+        answer: item.answer || {}
+      };
+    });
+  }
+
+  function getExamDisplayName(exam, index) {
+    if (exam && hasFilledValue(exam.figure)) return collapseWhitespace(exam.figure);
+    return "Figure " + String(index + 1);
+  }
+
+  function nonMissingDoctorValues(doctorEntries, extractor, normalizer) {
+    var out = [];
+    (doctorEntries || []).forEach(function (entry) {
+      var raw = extractor(entry.answer || {});
+      var value = normalizer ? normalizer(raw) : raw;
+      if (!isMissingValue(value)) out.push({ label: entry.label, value: value, raw: raw });
+    });
+    return out;
+  }
+
+  function uniqueValues(entries) {
+    var seen = {};
+    var out = [];
+    entries.forEach(function (entry) {
+      var sig = stableStringify(entry.value);
+      if (!seen[sig]) {
+        seen[sig] = true;
+        out.push(entry.value);
+      }
+    });
+    return out;
+  }
+
+  function ensureAutoResolutions(caseObj) {
+    caseObj.meta_review = sanitizeMetaReview(caseObj.meta_review);
+    return caseObj.meta_review.auto_resolutions;
+  }
+
+  function clearAutoResolution(caseObj, kind, key) {
+    var auto = ensureAutoResolutions(caseObj);
+    if (kind === "difficulty" || kind === "rarity" || kind === "discard") {
+      auto[kind] = false;
+      return;
+    }
+    if (kind === "step") delete auto.steps_essential[String(key)];
+    if (kind === "exam") delete auto.imaging_preferred_order[String(key)];
+  }
+
+  function computeDifficultyState(caseObj) {
+    var entries = nonMissingDoctorValues(getDoctorEntries(caseObj), function (a) { return a.difficulty; }, normalizeDifficulty);
+    var distinct = uniqueValues(entries);
+    return { entries: entries, distinct: distinct, consensus: distinct.length === 1, value: distinct.length === 1 ? distinct[0] : undefined, disagreement: distinct.length > 1 };
+  }
+
+  function computeRarityState(caseObj) {
+    var entries = nonMissingDoctorValues(getDoctorEntries(caseObj), function (a) { return a.rarity; }, normalizeRarity);
+    var distinct = uniqueValues(entries);
+    return { entries: entries, distinct: distinct, consensus: distinct.length === 1, value: distinct.length === 1 ? distinct[0] : undefined, disagreement: distinct.length > 1 };
+  }
+
+  function getStepEssentialConfirmations(caseObj, createIfMissing) {
+    if (!caseObj || !caseObj.meta_review) return {};
+    var map = caseObj.meta_review.steps_essential_confirmations;
+    if (!map || typeof map !== "object" || Array.isArray(map)) {
+      if (!createIfMissing) return {};
+      map = {};
+      caseObj.meta_review.steps_essential_confirmations = map;
+    }
+    return map;
+  }
+
+  function clearStepEssentialConfirmation(caseObj, key) {
+    if (!caseObj || !caseObj.meta_review) return;
+    var map = getStepEssentialConfirmations(caseObj, false);
+    var stepKey = String(key);
+    if (!Object.prototype.hasOwnProperty.call(map, stepKey)) return;
+    delete map[stepKey];
+    if (!Object.keys(map).length) delete caseObj.meta_review.steps_essential_confirmations;
+  }
+
+  function setStepEssentialConfirmation(caseObj, key, value) {
+    if (!caseObj || !caseObj.meta_review) return;
+    var map = getStepEssentialConfirmations(caseObj, true);
+    map[String(key)] = value;
+  }
+
+  function getStepEssentialState(caseObj, index, doctorEntries) {
+    var doctors = doctorEntries || getDoctorEntries(caseObj);
+    var step = caseObj && caseObj.diagnostic_steps && Array.isArray(caseObj.diagnostic_steps.steps) ? caseObj.diagnostic_steps.steps[index] : null;
+    var key = String(index + 1);
+    var values = nonMissingDoctorValues(doctors, function (a) { return getIndexedLegacyValue(a.steps_essential, index); }, normalizeEssential);
+    var distinct = uniqueValues(values);
+    var hasEssential = values.some(function (entry) { return entry.value === "essential"; });
+    var hasOptional = values.some(function (entry) { return entry.value === "optional"; });
+    var desired = "";
+    if (values.length) {
+      desired = hasEssential && hasOptional ? "important" : (values.every(function (entry) { return entry.value === "essential"; }) ? "essential" : "optional");
+    }
+    var ruleApplied = distinct.length > 1;
+    var auto = ensureAutoResolutions(caseObj);
+    var autoApplied = auto.steps_essential[key] === true;
+    var confirmations = getStepEssentialConfirmations(caseObj, false);
+    var confirmed = !!(ruleApplied && autoApplied && confirmations[key] === desired && step && step.essential === desired);
+    var manualResolved = !!(ruleApplied && !autoApplied && step && hasFilledValue(step.essential));
+    return {
+      key: key,
+      values: values,
+      distinct: distinct,
+      desired: desired,
+      ruleApplied: ruleApplied,
+      autoApplied: autoApplied,
+      confirmed: confirmed,
+      manualResolved: manualResolved,
+      resolved: !ruleApplied || confirmed || manualResolved
+    };
+  }
+
+  function applyRuleResolutionsToCase(caseObj) {
+    if (!caseObj) return false;
+    var auto = ensureAutoResolutions(caseObj);
+    var changed = false;
+    var doctors = getDoctorEntries(caseObj);
+    var steps = caseObj.diagnostic_steps && Array.isArray(caseObj.diagnostic_steps.steps) ? caseObj.diagnostic_steps.steps : [];
+
+    steps.forEach(function (step, idx) {
+      var key = String(idx + 1);
+      var values = nonMissingDoctorValues(doctors, function (a) { return getIndexedLegacyValue(a.steps_essential, idx); }, normalizeEssential);
+      if (!values.length) {
+        clearStepEssentialConfirmation(caseObj, key);
+        if (auto.steps_essential[key] === true) {
+          if (step.essential !== "") { step.essential = ""; changed = true; }
+          delete auto.steps_essential[key];
+        }
+        return;
+      }
+      var hasEssential = values.some(function (entry) { return entry.value === "essential"; });
+      var hasOptional = values.some(function (entry) { return entry.value === "optional"; });
+      var distinct = uniqueValues(values);
+      var ruleApplied = distinct.length > 1;
+      var desired = hasEssential && hasOptional ? "important" : (values.every(function (entry) { return entry.value === "essential"; }) ? "essential" : "optional");
+
+      if (auto.steps_essential[key] === true || !hasFilledValue(step.essential)) {
+        if (step.essential !== desired) { step.essential = desired; changed = true; }
+        auto.steps_essential[key] = true;
+      }
+
+      if (!ruleApplied) {
+        clearStepEssentialConfirmation(caseObj, key);
+      } else {
+        var confirmations = getStepEssentialConfirmations(caseObj, false);
+        if (confirmations[key] && confirmations[key] !== desired) clearStepEssentialConfirmation(caseObj, key);
+      }
+    });
+
+    if (changed) caseObj.meta_review.last_updated = nowIso();
+    return changed;
+  }
+
+  function applyRuleResolutionsToAllCases() {
+    var changed = 0;
+    appState.workingCases.forEach(function (caseObj) {
+      if (applyRuleResolutionsToCase(caseObj)) changed += 1;
+    });
+    return changed;
+  }
+
+  function hasActionableUpdate(update) {
+    return !!(update && update.review_required !== false && update.changed_fields && Object.keys(update.changed_fields).length > 0);
+  }
+
+  function getMetaUpdate(caseObj, index) {
+    if (!caseObj || !caseObj.meta_review || !caseObj.meta_review.meta_info_updates) return null;
+    return caseObj.meta_review.meta_info_updates[String(index + 1)] || null;
+  }
+
+  function getRubricUpdate(caseObj, sectionName) {
+    if (!caseObj || !caseObj.meta_review || !caseObj.meta_review.rubric_updates) return null;
+    return caseObj.meta_review.rubric_updates[sectionName] || null;
+  }
+
+  function getUpdateDecision(update) {
+    if (!update) return "pending";
+    if (typeof update.review_state === "string" && ["pending", "confirmed", "rejected"].indexOf(update.review_state) !== -1) {
+      return update.review_state;
+    }
+    return update.confirmed === true ? "confirmed" : "pending";
+  }
+
+  function setUpdateDecision(caseObj, kind, key, decision) {
+    var update = kind === "meta" ? getMetaUpdate(caseObj, Number(key) - 1) : getRubricUpdate(caseObj, key);
+    if (!update) return null;
+    update.review_state = decision || "pending";
+    if (["pending", "confirmed", "rejected"].indexOf(update.review_state) === -1) update.review_state = "pending";
+    update.confirmed = update.review_state === "confirmed";
+    if (update.review_state !== "rejected") {
+      update.manual_edit_done = false;
+      update.manual_edit_fields = [];
+    }
+    if (caseObj && caseObj.meta_review) caseObj.meta_review.last_updated = nowIso();
+    return update;
+  }
+
+  function isUpdateResolved(update) {
+    if (!hasActionableUpdate(update)) return true;
+    var decision = getUpdateDecision(update);
+    if (decision === "confirmed") return true;
+    if (decision === "rejected") return update.manual_edit_done === true;
+    return false;
+  }
+
+  function markUpdateUnconfirmed(caseObj, kind, key, fieldName) {
+    var update = kind === "meta" ? getMetaUpdate(caseObj, Number(key) - 1) : getRubricUpdate(caseObj, key);
+    if (!update || !hasActionableUpdate(update)) return;
+    var decision = getUpdateDecision(update);
+    if (decision === "confirmed") {
+      update.review_state = "pending";
+      update.confirmed = false;
+      update.manual_edit_done = false;
+      update.manual_edit_fields = [];
+    } else if (decision === "rejected") {
+      update.manual_edit_done = true;
+      if (!Array.isArray(update.manual_edit_fields)) update.manual_edit_fields = [];
+      if (fieldName && update.manual_edit_fields.indexOf(String(fieldName)) === -1) {
+        update.manual_edit_fields.push(String(fieldName));
+      }
+    }
+    if (caseObj && caseObj.meta_review) caseObj.meta_review.last_updated = nowIso();
+  }
+
+  function validateCaseForGreenLight(caseObj) {
+    var issues = [];
+    function addIssue(label, anchorId) { issues.push({ label: label, anchorId: anchorId }); }
+    if (!caseObj) return { ok: false, issues: issues, firstIssue: null };
+
+    var doctorEntries = getDoctorEntries(caseObj);
+    var steps = caseObj.diagnostic_steps && Array.isArray(caseObj.diagnostic_steps.steps) ? caseObj.diagnostic_steps.steps : [];
+    steps.forEach(function (step, idx) {
+      var state = getStepEssentialState(caseObj, idx, doctorEntries);
+      if (state.ruleApplied && !state.resolved) {
+        addIssue("Step " + (idx + 1) + " essential decision", "anchor-step-" + idx);
+      }
+    });
+
+    return { ok: issues.length === 0, issues: issues, firstIssue: issues.length ? issues[0] : null };
+  }
+
+  function syncCaseValidation(caseObj) {
+    var validation = validateCaseForGreenLight(caseObj);
+    if (caseObj && caseObj.meta_review) caseObj.meta_review.green_light = validation.ok;
+    return validation;
+  }
+
+  function syncAllCaseValidations() {
+    appState.workingCases.forEach(syncCaseValidation);
+  }
+
+  function getConflictInfo(caseObj) {
+    var conflicts = [];
+    var reviewItems = [];
+    if (!caseObj) return { conflicts: conflicts, reviewItems: reviewItems };
+
+    var doctorEntries = getDoctorEntries(caseObj);
+    var steps = caseObj.diagnostic_steps && Array.isArray(caseObj.diagnostic_steps.steps) ? caseObj.diagnostic_steps.steps : [];
+    steps.forEach(function (step, idx) {
+      var state = getStepEssentialState(caseObj, idx, doctorEntries);
+      if (state.ruleApplied) conflicts.push({ label: "Step " + (idx + 1) + " essential", anchorId: "anchor-step-" + idx });
+      if (state.ruleApplied && !state.resolved) reviewItems.push({ label: "Step " + (idx + 1) + " confirm or re-select", anchorId: "anchor-step-" + idx });
+    });
+
+    return { conflicts: conflicts, reviewItems: reviewItems };
+  }
+
+  function updateHeaderStats() {
+    syncAllCaseValidations();
+    var total = appState.workingCases.length;
+    var greenCount = appState.workingCases.filter(function (caseObj) { return caseObj.meta_review && caseObj.meta_review.green_light; }).length;
+    els.headerCaseCount.textContent = total ? ("Cases: " + (appState.currentIndex + 1) + " / " + total) : "No cases loaded";
+    els.headerGreenCount.textContent = "Green lights: " + greenCount + (total ? (" / " + total) : "");
+    els.btnPrevCase.disabled = !total || appState.currentIndex <= 0;
+    els.btnNextCase.disabled = !total || appState.currentIndex >= total - 1;
+    els.btnOpenEurorad.disabled = !total;
+    els.btnSaveDraft.disabled = !total;
+    els.btnExportJson.disabled = !total;
+  }
+
+  function readDraftMeta() {
+    try {
+      var raw = storage.getItem(DRAFT_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.saved_at) return null;
+      return { saved_at: parsed.saved_at };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function buildCaseMap() {
+    var map = {};
+    appState.workingCases.forEach(function (caseObj, idx) {
+      map[getCaseId(caseObj, idx)] = { index: idx, caseObj: caseObj };
+    });
+    return map;
+  }
+
+  function renderProjectFileStatus() {
+    els.projectFileStatus.innerHTML = "";
+    function addRow(title, body) {
+      var wrapper = document.createElement("div");
+      wrapper.className = "project-file-row";
+      var h = document.createElement("div");
+      h.className = "project-file-row-title";
+      h.textContent = title;
+      wrapper.appendChild(h);
+      var b = document.createElement("div");
+      b.className = "project-file-row-body";
+      b.textContent = body;
+      wrapper.appendChild(b);
+      els.projectFileStatus.appendChild(wrapper);
+    }
+
+    addRow("Original cases", appState.caseFileName || "Not loaded");
+    addRow("Meta review import", appState.metaReviewFileName || "Not loaded");
+
+    var currentDoctorMap = {};
+    appState.workingCases.forEach(function (caseObj) {
+      var docs = caseObj.meta_review && caseObj.meta_review.doctor_annotations ? caseObj.meta_review.doctor_annotations : {};
+      Object.keys(docs).forEach(function (label) {
+        if (!currentDoctorMap[label]) currentDoctorMap[label] = { count: 0, source_file: docs[label].source_file || "" };
+        currentDoctorMap[label].count += 1;
+      });
+    });
+    var labels = Object.keys(currentDoctorMap).sort();
+    if (labels.length) {
+      addRow("Doctors in current project", labels.map(function (label) {
+        var item = currentDoctorMap[label];
+        return label + " · " + item.count + " matched cases" + (item.source_file ? (" · file: " + item.source_file) : "");
+      }).join("\n"));
+    } else {
+      addRow("Doctors in current project", "No doctor annotations attached to current cases");
+    }
+
+    if (appState.pendingDoctorSources.length) {
+      addRow("Pending doctor files", appState.pendingDoctorSources.map(function (source) {
+        return source.label + " · " + source.answers.length + " answers · waiting for cases";
+      }).join("\n"));
+    }
+
+    var draftInfo = readDraftMeta();
+    addRow("Autosave", draftInfo ? ("Draft found · " + toHumanTime(draftInfo.saved_at)) : "No autosave found");
+    addRow("Draft storage mode", storage.kind === "browser" ? "Browser local storage" : "In-memory fallback for this tab only");
+
+    var currentCase = getCurrentCase();
+    if (currentCase) {
+      var validation = validateCaseForGreenLight(currentCase);
+      addRow("Current case review", validation.ok ? "Green light is ON." : ("Green light is OFF. First required issue: " + validation.firstIssue.label + "."));
+    }
+  }
+
+  function markDirty(skipFullRender) {
+    appState.dirty = true;
+    var caseObj = getCurrentCase();
+    if (caseObj) {
+      caseObj.meta_review.last_updated = nowIso();
+      syncCaseValidation(caseObj);
+      updateSummaryBadges(caseObj);
+      renderConflictSummary(caseObj);
+    }
+    renderProjectFileStatus();
+    updateHeaderStats();
+    renderCaseList();
+    if (!skipFullRender) {}
+  }
+
+  function normalizeDoctorSourceFromJson(fileName, parsed) {
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.answers)) throw new Error("This file is not a doctor annotation JSON.");
+    var base = (fileName || "doctor").replace(/\.json$/i, "").trim() || "doctor";
+    var existing = {};
+    appState.pendingDoctorSources.forEach(function (src) { existing[src.label] = true; });
+    appState.workingCases.forEach(function (caseObj) {
+      var docs = caseObj.meta_review && caseObj.meta_review.doctor_annotations ? caseObj.meta_review.doctor_annotations : {};
+      Object.keys(docs).forEach(function (label) { existing[label] = true; });
+    });
+    var label = base;
+    var counter = 2;
+    while (existing[label]) { label = base + "_" + counter; counter += 1; }
+    return {
+      label: label,
+      fileName: fileName || (label + ".json"),
+      dataset_id: parsed.dataset_id || "",
+      exported_at: parsed.exported_at || "",
+      answers: deepClone(parsed.answers)
+    };
+  }
+
+  function mergeDoctorSourceIntoWorkingCases(source) {
+    if (!appState.workingCases.length) {
+      appState.pendingDoctorSources = appState.pendingDoctorSources.filter(function (item) { return item.label !== source.label; });
+      appState.pendingDoctorSources.push(source);
+      renderProjectFileStatus();
+      setLoadMessage("Stored doctor file “" + source.fileName + "”. Load original cases or a meta review next.", "warning");
+      return;
+    }
+    var caseMap = buildCaseMap();
+    var matched = 0;
+    var unmatched = 0;
+    source.answers.forEach(function (answer) {
+      var caseId = String(answer.case_id || "");
+      if (caseId && caseMap[caseId]) {
+        var caseObj = caseMap[caseId].caseObj;
+        caseObj.meta_review = sanitizeMetaReview(caseObj.meta_review);
+        caseObj.meta_review.doctor_annotations[source.label] = {
+          source_file: source.fileName,
+          dataset_id: source.dataset_id || "",
+          exported_at: source.exported_at || "",
+          answer: deepClone(answer)
+        };
+        matched += 1;
+      } else {
+        unmatched += 1;
+      }
+    });
+    appState.pendingDoctorSources = appState.pendingDoctorSources.filter(function (item) { return item.label !== source.label; });
+    applyRuleResolutionsToAllCases();
+    syncAllCaseValidations();
+    renderProjectFileStatus();
+    renderCaseList();
+    renderCurrentCase();
+    setLoadMessage("Loaded doctor file “" + source.fileName + "”: " + matched + " matched, " + unmatched + " unmatched.", unmatched ? "warning" : "success");
+    appState.dirty = true;
+  }
+
+  function applyPendingDoctorSources() {
+    if (!appState.workingCases.length || !appState.pendingDoctorSources.length) return;
+    var pending = appState.pendingDoctorSources.slice();
+    appState.pendingDoctorSources = [];
+    pending.forEach(mergeDoctorSourceIntoWorkingCases);
+  }
+
+  function loadCasesArray(rawCases, fileName, sourceType) {
+    var sanitized = sanitizeCasesArray(rawCases);
+    if (!sanitized.length) {
+      setLoadMessage("The selected file does not contain any cases.", "error");
+      return;
+    }
+    appState.workingCases = sanitized;
+    appState.currentIndex = 0;
+    if (sourceType === "meta") {
+      appState.metaReviewFileName = fileName || "";
+      if (!appState.caseFileName) appState.caseFileName = "";
+    } else {
+      appState.caseFileName = fileName || "";
+      appState.metaReviewFileName = "";
+    }
+    applyPendingDoctorSources();
+    applyRuleResolutionsToAllCases();
+    syncAllCaseValidations();
+    renderProjectFileStatus();
+    renderCaseList();
+    renderCurrentCase();
+    updateHeaderStats();
+    setLoadMessage((sourceType === "meta" ? "Loaded meta review" : "Loaded original cases") + " from “" + fileName + "”.", "success");
+    appState.dirty = true;
+  }
+
+  function mergeMetaReviewArray(metaCases, fileName) {
+    var imported = sanitizeCasesArray(metaCases);
+    if (!imported.length) {
+      setLoadMessage("The selected meta review file does not contain any cases.", "error");
+      return;
+    }
+    if (!appState.workingCases.length) {
+      appState.workingCases = imported;
+      appState.currentIndex = 0;
+    } else {
+      var map = buildCaseMap();
+      imported.forEach(function (importedCase) {
+        var caseId = getCaseId(importedCase);
+        if (map[caseId]) appState.workingCases[map[caseId].index] = importedCase;
+        else appState.workingCases.push(importedCase);
+      });
+    }
+    appState.metaReviewFileName = fileName || "";
+    applyPendingDoctorSources();
+    applyRuleResolutionsToAllCases();
+    syncAllCaseValidations();
+    renderProjectFileStatus();
+    renderCaseList();
+    renderCurrentCase();
+    updateHeaderStats();
+    setLoadMessage("Merged meta review from “" + fileName + "”.", "success");
+    appState.dirty = true;
+  }
+
+  function readFileAsJson(file, callback) {
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (evt) {
+      try { callback(null, JSON.parse(String(evt.target.result || ""))); }
+      catch (err) { callback(err); }
+    };
+    reader.onerror = function () { callback(new Error("Failed to read file.")); };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function loadOriginalCasesFile(file) {
+    if (!file) return;
+    if (appState.workingCases.length && !window.confirm("Loading original cases will replace the current in-memory case list. Continue?")) return;
+    readFileAsJson(file, function (err, parsed) {
+      if (err) return setLoadMessage("Failed to parse the selected cases file.", "error");
+      if (Array.isArray(parsed)) loadCasesArray(parsed, file.name, "cases");
+      else if (parsed && Array.isArray(parsed.cases)) loadCasesArray(parsed.cases, file.name, "cases");
+      else setLoadMessage("The selected file is not a neuro_399-style case JSON array.", "error");
+    });
+  }
+
+  function loadMetaReviewFile(file) {
+    if (!file) return;
+    readFileAsJson(file, function (err, parsed) {
+      if (err) return setLoadMessage("Failed to parse the selected meta review file.", "error");
+      if (Array.isArray(parsed)) mergeMetaReviewArray(parsed, file.name);
+      else if (parsed && Array.isArray(parsed.cases)) mergeMetaReviewArray(parsed.cases, file.name);
+      else setLoadMessage("The selected file is not a readable meta review export.", "error");
+    });
+  }
+
+  function loadDoctorFile(file) {
+    if (!file) return;
+    readFileAsJson(file, function (err, parsed) {
+      if (err) return setLoadMessage("Failed to parse the selected doctor file.", "error");
+      try {
+        mergeDoctorSourceIntoWorkingCases(normalizeDoctorSourceFromJson(file.name, parsed));
+      } catch (e) {
+        setLoadMessage(e.message || "This file is not a doctor annotation JSON.", "error");
+      }
+    });
+  }
+
+  function inferComparisonMode(title) {
+    if (/Doctor difficulty/i.test(title)) return "difficulty";
+    if (/Doctor rarity/i.test(title)) return "rarity";
+    if (/Doctor discard/i.test(title)) return "discard";
+    if (/Doctor essential/i.test(title)) return "essential";
+    if (/Doctor preferred order/i.test(title)) return "order";
+    if (/Doctor meta info OK/i.test(title)) return "meta-flag";
+    if (/Doctor localisation rubric OK/i.test(title) || /Doctor diagnosis rubric OK/i.test(title)) return "rubric-flag";
+    return "default";
+  }
+
+  function classifyDefault(values) {
+    var nonMissing = values.filter(function (v) { return !isMissingValue(v); });
+    if (!nonMissing.length) return "none";
+    var distinct = {};
+    var count = 0;
+    nonMissing.forEach(function (v) { var sig = stableStringify(v); if (!distinct[sig]) { distinct[sig] = true; count += 1; } });
+    if (count > 1) return "conflict";
+    if (nonMissing.length === 1) return "review";
+    return "consensus";
+  }
+
+  function stringifyForDisplay(value) {
+    if (value === undefined || value === null || value === "") return "—";
+    if (typeof value === "boolean") return value ? "True" : "False";
+    return String(value);
+  }
+
+  function createComparisonBox(title, doctorValues, options) {
+    options = options || {};
+    var mode = options.mode || "default";
+    var nonMissing = (doctorValues || []).filter(function (entry) { return !isMissingValue(entry.value); });
+    if (!nonMissing.length && !options.force) return null;
+
+    var distinct = {};
+    nonMissing.forEach(function (entry) { distinct[stableStringify(entry.value)] = entry.value; });
+    var distinctCount = Object.keys(distinct).length;
+    var status = "none";
+    var badgeText = "No doctor value";
+    var footerText = "";
+
+    if (mode === "difficulty" || mode === "rarity") {
+      if (!nonMissing.length) status = "review";
+      else if (distinctCount > 1) { status = "conflict"; badgeText = "Conflict"; }
+      else if (nonMissing.length >= 2) { status = "consensus"; badgeText = "Same doctor value"; }
+      else { status = "review"; badgeText = "Single doctor value"; }
+    } else if (mode === "essential") {
+      if (!nonMissing.length) status = "review";
+      else if (distinctCount > 1) { status = "review"; badgeText = "Rule applied"; }
+      else if (nonMissing.length >= 2) { status = "consensus"; badgeText = "Same doctor value"; }
+      else { status = "review"; badgeText = "Single doctor value"; }
+    } else if (mode === "order") {
+      footerText = "Rule: preferred order is auto-filled as the sum of doctor ranks.";
+      if (!nonMissing.length) status = "review";
+      else if (distinctCount > 1) { status = "review"; badgeText = "Rule applied"; }
+      else if (nonMissing.length >= 2) { status = "consensus"; badgeText = "Same doctor value"; }
+      else { status = "review"; badgeText = "Single doctor value"; }
+    } else if (mode === "discard") {
+      footerText = "Rule: if any doctor suggests discard, the case is discarded.";
+      if (!nonMissing.length) status = "review";
+      else if (nonMissing.some(function (entry) { return entry.value === true || String(entry.value).toLowerCase() === "true"; }) || distinctCount > 1) { status = "review"; badgeText = "Rule applied"; }
+      else if (nonMissing.length >= 2) { status = "consensus"; badgeText = "Same doctor value"; }
+      else { status = "review"; badgeText = "Single doctor value"; }
+    } else if (mode === "meta-flag" || mode === "rubric-flag") {
+      if (!nonMissing.length) status = "none";
+      else if (nonMissing.some(function (entry) { return entry.value === false || String(entry.value).toLowerCase() === "false"; })) { status = "review"; badgeText = "Needs review"; }
+      else if (distinctCount > 1) { status = "review"; badgeText = "Needs review"; }
+      else if (nonMissing.length >= 2) { status = "consensus"; badgeText = "Same doctor value"; }
+      else { status = "review"; badgeText = "Single doctor value"; }
+    } else {
+      status = classifyDefault((doctorValues || []).map(function (entry) { return entry.value; }));
+      badgeText = status === "conflict" ? "Conflict" : status === "review" ? "Needs review" : status === "consensus" ? "Same doctor value" : "No doctor value";
+    }
+
+    if (status === "none" && !options.force) return null;
+
+    var box = document.createElement("div");
+    box.className = "comparison-box" + (status === "conflict" ? " conflict" : status === "review" ? " review" : status === "consensus" ? " consensus" : "");
+
+    var head = document.createElement("div");
+    head.className = "comparison-head";
+    var titleEl = document.createElement("span");
+    titleEl.textContent = title;
+    head.appendChild(titleEl);
+    var badge = document.createElement("span");
+    badge.className = "badge " + (status === "conflict" ? "red" : status === "review" ? "amber" : status === "consensus" ? "" : "gray");
+    badge.textContent = badgeText;
+    head.appendChild(badge);
+    box.appendChild(head);
+
+    var grid = document.createElement("div");
+    grid.className = "comparison-grid";
+    (doctorValues || []).forEach(function (entry) {
+      var card = document.createElement("div");
+      card.className = "comparison-entry";
+      var name = document.createElement("div");
+      name.className = "comparison-entry-name";
+      name.textContent = entry.label;
+      card.appendChild(name);
+      var value = document.createElement("div");
+      value.className = "comparison-entry-value" + (isMissingValue(entry.value) ? " comparison-empty" : "");
+      value.textContent = stringifyForDisplay(entry.value);
+      card.appendChild(value);
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+
+    if (footerText) {
+      var foot = document.createElement("div");
+      foot.className = "inline-help";
+      foot.style.padding = "0 10px 10px 10px";
+      foot.textContent = footerText;
+      box.appendChild(foot);
+    }
+    return box;
+  }
+
+  function renderFieldComparison(container, title, doctorEntries, extractor, options) {
+    options = options || {};
+    if (!options.mode) options.mode = inferComparisonMode(title);
+    var doctorValues = doctorEntries.map(function (entry) { return { label: entry.label, value: extractor(entry.answer || {}) }; });
+    var box = createComparisonBox(title, doctorValues, options);
+    if (box) container.appendChild(box);
+  }
+
+  function renderLongCommentComparison(container, title, doctorEntries, extractor) {
+    var doctorValues = doctorEntries.map(function (entry) { return { label: entry.label, value: extractor(entry.answer || {}) }; }).filter(function (entry) { return !isMissingValue(entry.value); });
+    if (!doctorValues.length) return;
+    var box = createComparisonBox(title, doctorValues, { force: true, mode: "default" });
+    if (box) container.appendChild(box);
+  }
+
+  function createInputFieldBlock(config) {
+    var wrapper = document.createElement("div");
+    wrapper.className = "field-block compact";
+    var label = document.createElement("label");
+    label.textContent = config.label || "";
+    wrapper.appendChild(label);
+
+    var input;
+    if (config.type === "textarea") {
+      input = document.createElement("textarea");
+      if (config.rows) input.rows = config.rows;
+    } else if (config.type === "select") {
+      input = document.createElement("select");
+      var options = (config.options || []).slice();
+      var currentValue = config.value == null ? "" : String(config.value);
+      var hasCurrentValue = options.some(function (opt) { return String(opt.value) === currentValue; });
+      if (currentValue !== "" && !hasCurrentValue) {
+        options.unshift({ value: currentValue, label: currentValue });
+      }
+      options.forEach(function (opt) {
+        var option = document.createElement("option");
+        option.value = opt.value;
+        option.textContent = opt.label;
+        input.appendChild(option);
+      });
+    } else {
+      input = document.createElement("input");
+      input.type = config.type || "text";
+      if (config.list) input.setAttribute("list", config.list);
+      if (config.placeholder) input.placeholder = config.placeholder;
+      if (config.min != null) input.min = config.min;
+      if (config.step != null) input.step = config.step;
+    }
+    input.value = config.value == null ? "" : String(config.value);
+    input.addEventListener(config.eventType || "input", config.onChange || function () {});
+    wrapper.appendChild(input);
+
+    if (config.help) {
+      var help = document.createElement("div");
+      help.className = "inline-help";
+      help.textContent = config.help;
+      wrapper.appendChild(help);
+    }
+    if (config.renderComparisons) config.renderComparisons(wrapper);
+    return { wrapper: wrapper, input: input };
+  }
+
+  function formatChangedFields(update) {
+    if (!update || !update.changed_fields) return [];
+    return Object.keys(update.changed_fields).map(function (key) {
+      var item = update.changed_fields[key] || {};
+      return key + ": " + stringifyForDisplay(item.before) + " → " + stringifyForDisplay(item.after);
+    });
+  }
+
+  function createUpdateBox(title, update, onDecision) {
+    if (!update) return null;
+    var actionable = hasActionableUpdate(update);
+    var decision = getUpdateDecision(update);
+    var manualDone = !!update.manual_edit_done;
+    var scopeText = /meta info/i.test(title) ? "this whole meta info block" : "this whole rubric block";
+
+    var box = document.createElement("div");
+    box.className = "comparison-box review";
+    var head = document.createElement("div");
+    head.className = "comparison-head";
+    var titleEl = document.createElement("span");
+    titleEl.textContent = title;
+    head.appendChild(titleEl);
+
+    var badge = document.createElement("span");
+    if (!actionable) {
+      badge.className = "badge gray";
+      badge.textContent = "No suggestion";
+    } else if (decision === "confirmed") {
+      badge.className = "badge green";
+      badge.textContent = "Confirmed";
+    } else if (decision === "rejected" && manualDone) {
+      badge.className = "badge green";
+      badge.textContent = "Manual edit saved";
+    } else if (decision === "rejected") {
+      badge.className = "badge amber";
+      badge.textContent = "Rejected · edit required";
+    } else {
+      badge.className = "badge amber";
+      badge.textContent = "Needs decision";
+    }
+    head.appendChild(badge);
+    box.appendChild(head);
+
+    var body = document.createElement("div");
+    body.style.padding = "10px";
+    body.style.fontSize = "13px";
+    body.style.lineHeight = "1.5";
+
+    var changes = formatChangedFields(update);
+    if (changes.length) {
+      var changesTitle = document.createElement("div");
+      changesTitle.style.fontWeight = "700";
+      changesTitle.style.marginBottom = "4px";
+      changesTitle.textContent = "Suggested changes";
+      body.appendChild(changesTitle);
+      changes.forEach(function (line) {
+        var div = document.createElement("div");
+        div.textContent = line;
+        body.appendChild(div);
+      });
+    }
+
+    var feedbackLines = [];
+    (update.doctor_feedback || []).forEach(function (item) {
+      var bits = [item.doctor + ":"];
+      if (item.ok === false) bits.push("flagged incorrect");
+      if (hasFilledValue(item.comment)) bits.push(String(item.comment));
+      feedbackLines.push(bits.join(" "));
+    });
+    if (feedbackLines.length) {
+      var fbTitle = document.createElement("div");
+      fbTitle.style.fontWeight = "700";
+      fbTitle.style.margin = "8px 0 4px 0";
+      fbTitle.textContent = "Doctor feedback";
+      body.appendChild(fbTitle);
+      feedbackLines.forEach(function (line) {
+        var div2 = document.createElement("div");
+        div2.textContent = line;
+        body.appendChild(div2);
+      });
+    }
+
+    var note = document.createElement("div");
+    note.className = "inline-help";
+    note.style.marginTop = "8px";
+    if (!changes.length) {
+      note.textContent = "No actionable stored suggestion. This does not block the green light.";
+    } else if (decision === "rejected" && manualDone) {
+      note.textContent = "Suggestion rejected. Manual edit recorded for " + scopeText + ".";
+    } else if (decision === "rejected") {
+      note.textContent = "Suggestion rejected. Manual edit now applies to " + scopeText + ". You only need to correct the parts that are actually wrong.";
+    } else {
+      note.textContent = "You can confirm the stored suggestion or reject it and edit " + scopeText + " yourself.";
+    }
+    body.appendChild(note);
+
+    if (actionable) {
+      var actions = document.createElement("div");
+      actions.className = "toolbar-row";
+      actions.style.marginTop = "10px";
+
+      var btnConfirm = document.createElement("button");
+      btnConfirm.type = "button";
+      btnConfirm.textContent = "Confirm suggestion";
+      btnConfirm.className = decision === "confirmed" ? "green" : "primary";
+      btnConfirm.addEventListener("click", function () { if (typeof onDecision === "function") onDecision("confirmed"); });
+      actions.appendChild(btnConfirm);
+
+      var btnReject = document.createElement("button");
+      btnReject.type = "button";
+      btnReject.textContent = "Reject · edit manually";
+      btnReject.className = decision === "rejected" ? "warning" : "ghost";
+      btnReject.addEventListener("click", function () { if (typeof onDecision === "function") onDecision("rejected"); });
+      actions.appendChild(btnReject);
+
+      var btnReset = document.createElement("button");
+      btnReset.type = "button";
+      btnReset.textContent = "Reset";
+      btnReset.className = "ghost";
+      btnReset.disabled = decision === "pending" && !manualDone;
+      btnReset.addEventListener("click", function () { if (typeof onDecision === "function") onDecision("pending"); });
+      actions.appendChild(btnReset);
+
+      body.appendChild(actions);
+    }
+
+    box.appendChild(body);
+    return box;
+  }
+
+  function updateSummaryBadges(caseObj) {
+    var doctorCount = getDoctorEntries(caseObj).length;
+    var info = getConflictInfo(caseObj);
+    els.badgeDoctors.textContent = "Doctors: " + doctorCount;
+    els.badgeConflicts.textContent = "Conflicts: " + info.conflicts.length;
+    els.badgeReviewItems.textContent = "Needs review: " + info.reviewItems.length;
+    els.badgeUpdated.textContent = "Last updated: " + toHumanTime(caseObj.meta_review.last_updated);
+    els.btnGreenLight.textContent = caseObj.meta_review.green_light ? "Green light ON" : "Green light OFF";
+    els.btnGreenLight.className = caseObj.meta_review.green_light ? "green" : "";
+  }
+
+  function addJumpChip(container, text, anchorId, statusClass) {
+    var chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "jump-chip" + (statusClass === "review" ? " review" : "");
+    chip.textContent = text;
+    chip.addEventListener("click", function () { jumpToAnchor(anchorId); });
+    container.appendChild(chip);
+  }
+
+  function renderConflictSummary(caseObj) {
+    els.conflictSummary.innerHTML = "";
+    var info = getConflictInfo(caseObj);
+    info.conflicts.forEach(function (item) { addJumpChip(els.conflictSummary, item.label, item.anchorId, "conflict"); });
+    info.reviewItems.forEach(function (item) { addJumpChip(els.conflictSummary, item.label, item.anchorId, "review"); });
+  }
+
+  function renderCaseList() {
+    els.caseList.innerHTML = "";
+    if (!appState.workingCases.length) return;
+    var searchText = collapseWhitespace(els.caseSearch.value || "").toLowerCase();
+    var filterValue = els.caseFilter.value || "all";
+    appState.workingCases.forEach(function (caseObj, index) {
+      var info = getConflictInfo(caseObj);
+      var caseId = getCaseId(caseObj, index);
+      var title = caseObj.case_title || ("Case " + caseId);
+      var doctorCount = getDoctorEntries(caseObj).length;
+      var isGreen = !!(caseObj.meta_review && caseObj.meta_review.green_light);
+      if (searchText) {
+        var haystack = (caseId + " " + title).toLowerCase();
+        if (haystack.indexOf(searchText) === -1) return;
+      }
+      if (filterValue === "conflict" && !info.conflicts.length) return;
+      if (filterValue === "review" && !info.conflicts.length && !info.reviewItems.length) return;
+      if (filterValue === "green" && !isGreen) return;
+      if (filterValue === "pending" && isGreen) return;
+
+      var li = document.createElement("li");
+      li.className = "case-item" + (index === appState.currentIndex ? " active" : "");
+      var top = document.createElement("div");
+      top.className = "case-item-top";
+      var leftWrap = document.createElement("div");
+      leftWrap.style.display = "flex";
+      leftWrap.style.gap = "8px";
+      leftWrap.style.alignItems = "flex-start";
+      leftWrap.style.minWidth = "0";
+      leftWrap.style.flex = "1 1 auto";
+      var dot = document.createElement("span");
+      dot.className = "case-dot " + (isGreen ? "green" : info.reviewItems.length ? "amber" : "gray");
+      leftWrap.appendChild(dot);
+      var textWrap = document.createElement("div");
+      textWrap.style.minWidth = "0";
+      var titleEl = document.createElement("div");
+      titleEl.className = "case-item-title";
+      titleEl.textContent = (index + 1) + ". " + title;
+      textWrap.appendChild(titleEl);
+      var sub = document.createElement("div");
+      sub.className = "case-subline";
+      sub.textContent = "ID " + caseId;
+      textWrap.appendChild(sub);
+      leftWrap.appendChild(textWrap);
+      top.appendChild(leftWrap);
+      var meta = document.createElement("div");
+      meta.className = "case-item-meta";
+      if (doctorCount) {
+        var doctorBadge = document.createElement("span");
+        doctorBadge.className = "case-subbadge";
+        doctorBadge.textContent = doctorCount + " doctor" + (doctorCount === 1 ? "" : "s");
+        meta.appendChild(doctorBadge);
+      }
+      if (info.conflicts.length) {
+        var conflictBadge = document.createElement("span");
+        conflictBadge.className = "case-subbadge conflict";
+        conflictBadge.textContent = info.conflicts.length + " conflict" + (info.conflicts.length === 1 ? "" : "s");
+        meta.appendChild(conflictBadge);
+      } else if (info.reviewItems.length) {
+        var reviewBadge = document.createElement("span");
+        reviewBadge.className = "case-subbadge";
+        reviewBadge.textContent = info.reviewItems.length + " review";
+        meta.appendChild(reviewBadge);
+      }
+      if (isGreen) {
+        var greenBadge = document.createElement("span");
+        greenBadge.className = "case-subbadge green";
+        greenBadge.textContent = "Green";
+        meta.appendChild(greenBadge);
+      }
+      top.appendChild(meta);
+      li.appendChild(top);
+      li.addEventListener("click", function () { switchCase(index, true); });
+      els.caseList.appendChild(li);
+    });
+  }
+
+  function renderCaseFields(caseObj, doctorEntries) {
+    els.caseTitleInput.value = caseObj.case_title || "";
+    els.caseTitleInputSecondary.value = caseObj.case_title || "";
+    if (caseObj.case_url) { els.caseUrlLink.href = caseObj.case_url; els.caseUrlLink.textContent = caseObj.case_url; }
+    else { els.caseUrlLink.removeAttribute("href"); els.caseUrlLink.textContent = ""; }
+
+    function syncTitle(newValue) {
+      caseObj.case_title = newValue;
+      els.caseTitleInput.value = newValue;
+      els.caseTitleInputSecondary.value = newValue;
+      markDirty();
+    }
+    els.caseTitleInput.oninput = function () { syncTitle(this.value); };
+    els.caseTitleInputSecondary.oninput = function () { syncTitle(this.value); };
+
+    els.anchorDemography.innerHTML = "";
+    els.anchorDemography.appendChild(createInputFieldBlock({
+      label: "Demography",
+      type: "textarea",
+      rows: 3,
+      value: caseObj.demography,
+      help: "Editable final demography field.",
+      onChange: function () { caseObj.demography = this.value; markDirty(); }
+    }).wrapper);
+
+    els.anchorDifficulty.innerHTML = "";
+    els.anchorDifficulty.appendChild(createInputFieldBlock({
+      label: "Difficulty",
+      type: "select",
+      value: caseObj.difficulty,
+      options: [{ value: "", label: "—" }, { value: "normal", label: "normal" }, { value: "hard", label: "hard" }, { value: "extrem hard", label: "extrem hard" }],
+      eventType: "change",
+      onChange: function () { caseObj.difficulty = this.value; clearAutoResolution(caseObj, "difficulty"); markDirty(); },
+      renderComparisons: function (container) { renderFieldComparison(container, "Doctor difficulty", doctorEntries, function (answer) { return answer.difficulty; }); }
+    }).wrapper);
+
+    els.anchorRarity.innerHTML = "";
+    els.anchorRarity.appendChild(createInputFieldBlock({
+      label: "Rarity",
+      type: "select",
+      value: caseObj.rarity,
+      options: [{ value: "", label: "—" }, { value: "Common", label: "Common" }, { value: "Rare", label: "Rare" }, { value: "Extrem Rare", label: "Extrem Rare" }],
+      eventType: "change",
+      onChange: function () { caseObj.rarity = this.value; clearAutoResolution(caseObj, "rarity"); markDirty(); },
+      renderComparisons: function (container) { renderFieldComparison(container, "Doctor rarity", doctorEntries, function (answer) { return answer.rarity; }); }
+    }).wrapper);
+
+    els.anchorDiscard.innerHTML = "";
+    els.anchorDiscard.appendChild(createInputFieldBlock({
+      label: "Discard case",
+      type: "select",
+      value: caseObj.Discard === "" ? "" : String(caseObj.Discard),
+      options: [{ value: "", label: "—" }, { value: "false", label: "false" }, { value: "true", label: "true" }],
+      eventType: "change",
+      onChange: function () { caseObj.Discard = parseDiscardValue(this.value); clearAutoResolution(caseObj, "discard"); markDirty(); },
+      renderComparisons: function (container) { renderFieldComparison(container, "Doctor discard decision", doctorEntries, function (answer) { return answer.discard; }); }
+    }).wrapper);
+
+    els.anchorRedFlag.innerHTML = "";
+    els.anchorRedFlag.appendChild(createInputFieldBlock({
+      label: "Red flag exam",
+      type: "textarea",
+      rows: 3,
+      value: caseObj.red_flag_exam,
+      help: "Optional field.",
+      onChange: function () { caseObj.red_flag_exam = this.value; markDirty(); },
+      renderComparisons: function (container) { renderLongCommentComparison(container, "Doctor red flag comments", doctorEntries, function (answer) { return answer.red_flag_exam; }); }
+    }).wrapper);
+
+    els.anchorComment.innerHTML = "";
+    els.anchorComment.appendChild(createInputFieldBlock({
+      label: "Case comment",
+      type: "textarea",
+      rows: 4,
+      value: caseObj.comment,
+      onChange: function () { caseObj.comment = this.value; markDirty(); },
+      renderComparisons: function (container) { renderLongCommentComparison(container, "Doctor case comments", doctorEntries, function (answer) { return answer.comment; }); }
+    }).wrapper);
+  }
+
+  function createEssentialDecisionBox(caseObj, index, state) {
+    if (!state || !state.ruleApplied) return null;
+
+    var box = document.createElement("div");
+    box.className = "comparison-box review";
+
+    var head = document.createElement("div");
+    head.className = "comparison-head";
+    var titleEl = document.createElement("span");
+    titleEl.textContent = "Essential decision";
+    head.appendChild(titleEl);
+
+    var badge = document.createElement("span");
+    if (state.confirmed) {
+      badge.className = "badge green";
+      badge.textContent = "Confirmed";
+    } else if (state.manualResolved) {
+      badge.className = "badge green";
+      badge.textContent = "Manual selection";
+    } else {
+      badge.className = "badge amber";
+      badge.textContent = "Confirm or re-select";
+    }
+    head.appendChild(badge);
+    box.appendChild(head);
+
+    var body = document.createElement("div");
+    body.style.padding = "10px";
+    body.style.fontSize = "13px";
+    body.style.lineHeight = "1.5";
+
+    var text = document.createElement("div");
+    text.textContent = "Auto-filled as " + stringifyForDisplay(state.desired) + " from mixed doctor values.";
+    body.appendChild(text);
+
+    var note = document.createElement("div");
+    note.className = "inline-help";
+    if (state.confirmed) {
+      note.textContent = "Confirmed. Green light accepts this auto-fill.";
+    } else if (state.manualResolved) {
+      note.textContent = "You changed the selection manually. Green light uses your current value.";
+    } else {
+      note.textContent = "Green light stays off until you confirm this auto-fill or change the selection.";
+    }
+    body.appendChild(note);
+
+    if (!state.confirmed && !state.manualResolved && state.autoApplied) {
+      var actions = document.createElement("div");
+      actions.className = "toolbar-row";
+      actions.style.marginTop = "10px";
+
+      var btnConfirm = document.createElement("button");
+      btnConfirm.type = "button";
+      btnConfirm.textContent = "Confirm";
+      btnConfirm.className = "primary";
+      btnConfirm.addEventListener("click", function () {
+        setStepEssentialConfirmation(caseObj, state.key, state.desired);
+        markDirty();
+        renderCurrentCase();
+      });
+      actions.appendChild(btnConfirm);
+      body.appendChild(actions);
+    }
+
+    box.appendChild(body);
+    return box;
+  }
+
+  function renderDiagnosticSteps(caseObj, doctorEntries) {
+    els.diagnosticStepsList.innerHTML = "";
+    var steps = caseObj.diagnostic_steps && Array.isArray(caseObj.diagnostic_steps.steps) ? caseObj.diagnostic_steps.steps : [];
+    if (!steps.length) {
+      var empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "No diagnostic steps in this case.";
+      els.diagnosticStepsList.appendChild(empty);
+      return;
+    }
+    steps.forEach(function (step, index) {
+      var card = document.createElement("div");
+      card.className = "step-card anchor-target";
+      card.id = "anchor-step-" + index;
+      var title = document.createElement("h4");
+      title.textContent = "Step " + (index + 1);
+      card.appendChild(title);
+      card.appendChild(createInputFieldBlock({ label: "Step text", type: "textarea", rows: 3, value: step.step, onChange: function () { step.step = this.value; markDirty(); } }).wrapper);
+      var grid = document.createElement("div");
+      grid.className = "field-grid-3";
+      grid.appendChild(createInputFieldBlock({ label: "Source", type: "text", value: step.source, onChange: function () { step.source = this.value; markDirty(); } }).wrapper);
+
+      var essentialField = createInputFieldBlock({
+        label: "Essential",
+        type: "select",
+        value: step.essential,
+        options: [{ value: "", label: "—" }, { value: "essential", label: "essential" }, { value: "important", label: "important" }, { value: "optional", label: "optional" }, { value: "unnecessary", label: "unnecessary" }],
+        eventType: "change",
+        onChange: function () {
+          step.essential = this.value;
+          clearStepEssentialConfirmation(caseObj, index + 1);
+          clearAutoResolution(caseObj, "step", index + 1);
+          markDirty();
+          renderCurrentCase();
+        },
+        renderComparisons: function (container) { renderFieldComparison(container, "Doctor essential value", doctorEntries, function (answer) { return getIndexedLegacyValue(answer.steps_essential, index); }); }
+      });
+      var essentialState = getStepEssentialState(caseObj, index, doctorEntries);
+      var essentialDecisionBox = createEssentialDecisionBox(caseObj, index, essentialState);
+      if (essentialDecisionBox) essentialField.wrapper.appendChild(essentialDecisionBox);
+      grid.appendChild(essentialField.wrapper);
+
+      grid.appendChild(createInputFieldBlock({ label: "Reason", type: "textarea", rows: 3, value: step.reason, onChange: function () { step.reason = this.value; markDirty(); } }).wrapper);
+      card.appendChild(grid);
+      els.diagnosticStepsList.appendChild(card);
+    });
+  }
+
+  function renderImagingExaminations(caseObj, doctorEntries) {
+    els.imagingList.innerHTML = "";
+    var exams = Array.isArray(caseObj.imaging_examinations) ? caseObj.imaging_examinations : [];
+    if (!exams.length) {
+      var empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "No imaging examinations in this case.";
+      els.imagingList.appendChild(empty);
+      return;
+    }
+    exams.forEach(function (exam, index) {
+      var card = document.createElement("div");
+      card.className = "exam-card anchor-target";
+      card.id = "anchor-exam-" + index;
+      var title = document.createElement("h4");
+      title.textContent = getExamDisplayName(exam, index);
+      card.appendChild(title);
+
+      var update = getMetaUpdate(caseObj, index);
+
+      var topGrid = document.createElement("div");
+      topGrid.className = "field-grid-3";
+      topGrid.appendChild(createInputFieldBlock({ label: "Figure", type: "text", value: exam.figure, eventType: "change", onChange: function () { exam.figure = this.value; markDirty(); renderCurrentCase(); } }).wrapper);
+      topGrid.appendChild(createInputFieldBlock({ label: "Modality", type: "text", value: exam.modality, onChange: function () { exam.modality = this.value; markDirty(); } }).wrapper);
+      topGrid.appendChild(createInputFieldBlock({
+        label: "Preferred order",
+        type: "number",
+        value: exam.preferred_order === "" || exam.preferred_order == null ? "" : exam.preferred_order,
+        min: 1,
+        step: 1,
+        onChange: function () { var v = String(this.value).trim(); exam.preferred_order = v === "" ? "" : Number(v); clearAutoResolution(caseObj, "exam", index + 1); markDirty(); },
+        renderComparisons: function (container) { renderFieldComparison(container, "Doctor preferred order", doctorEntries, function (answer) { return getIndexedLegacyValue(answer.imaging_preferred_order, index); }); }
+      }).wrapper);
+      card.appendChild(topGrid);
+      card.appendChild(createInputFieldBlock({ label: "Image caption", type: "textarea", rows: 2, value: exam.image_caption, onChange: function () { exam.image_caption = this.value; markDirty(); } }).wrapper);
+
+      var metaTitle = document.createElement("div");
+      metaTitle.style.fontSize = "13px";
+      metaTitle.style.fontWeight = "700";
+      metaTitle.style.margin = "10px 0 8px 0";
+      metaTitle.textContent = "Meta info";
+      card.appendChild(metaTitle);
+
+      var metaGrid = document.createElement("div");
+      metaGrid.className = "field-grid-6";
+      [
+        { key: "modality", label: "Modality", type: "text" },
+        { key: "acquisition", label: "Acquisition", type: "text" },
+        { key: "view", label: "View", type: "text" },
+        { key: "imaged_region", label: "Imaged region", type: "text" },
+        { key: "time_past", label: "Time past", type: "text" },
+        { key: "contrast", label: "Contrast", type: "select", options: [{ value: "", label: "—" }, { value: "YES", label: "YES" }, { value: "NO", label: "NO" }] }
+      ].forEach(function (cfg) {
+        var value = cfg.key === "time_past" ? (exam.meta_info.time_past == null ? "" : exam.meta_info.time_past) : exam.meta_info[cfg.key];
+        var fieldBlock = createInputFieldBlock({
+          label: cfg.label,
+          type: cfg.type,
+          value: value,
+          options: cfg.options,
+          eventType: "change",
+          onChange: function () {
+            if (cfg.key === "time_past") exam.meta_info.time_past = parseFreeNumberOrText(this.value);
+            else exam.meta_info[cfg.key] = this.value;
+            markUpdateUnconfirmed(caseObj, "meta", index + 1, cfg.key);
+            markDirty();
+            renderCurrentCase();
+          }
+        });
+        var fieldChange = update && update.changed_fields ? update.changed_fields[cfg.key] : null;
+        if (fieldChange) {
+          var fieldNote = document.createElement("div");
+          fieldNote.className = "inline-help";
+          fieldNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(fieldChange.before) + " · Suggested: " + stringifyForDisplay(fieldChange.after);
+          fieldBlock.wrapper.appendChild(fieldNote);
+        }
+        metaGrid.appendChild(fieldBlock.wrapper);
+      });
+      card.appendChild(metaGrid);
+
+      renderFieldComparison(card, "Doctor meta info OK flag", doctorEntries, function (answer) { return getIndexedLegacyValue(answer.imaging_meta_info_ok, index); });
+      renderLongCommentComparison(card, "Doctor meta info comments", doctorEntries, function (answer) { return getIndexedLegacyValue(answer.imaging_meta_info_comment, index); });
+      if (update) {
+        var updateBox = createUpdateBox("Stored meta info suggestion", update, function (decision) {
+          setUpdateDecision(caseObj, "meta", index + 1, decision);
+          markDirty();
+          renderCurrentCase();
+        });
+        if (updateBox) card.appendChild(updateBox);
+      }
+      els.imagingList.appendChild(card);
+    });
+  }
+
+  function renderRubricEditors(caseObj, doctorEntries) {
+    els.rubricLocalisationEditor.innerHTML = "";
+    els.rubricDiagnosisEditor.innerHTML = "";
+    var localisation = caseObj.rubric_0_to_3.Localisation;
+    var diagnosis = caseObj.rubric_0_to_3.Diagnosis;
+    var locUpdate = getRubricUpdate(caseObj, "Localisation");
+    var diagUpdate = getRubricUpdate(caseObj, "Diagnosis");
+
+    var locRefGrid = document.createElement("div");
+    locRefGrid.className = "field-grid";
+    [
+      { key: "Laterality", label: "Reference answer · Laterality" },
+      { key: "Organ/Region", label: "Reference answer · Organ/Region" },
+      { key: "Specific Substructure/Segment", label: "Reference answer · Specific Substructure/Segment" }
+    ].forEach(function (cfg) {
+      var block = createInputFieldBlock({
+        label: cfg.label,
+        type: "textarea",
+        rows: 2,
+        value: localisation.reference_answer[cfg.key],
+        eventType: "change",
+        onChange: function () {
+          localisation.reference_answer[cfg.key] = this.value;
+          markUpdateUnconfirmed(caseObj, "rubric", "Localisation", "reference_answer." + cfg.key);
+          markDirty();
+          renderCurrentCase();
+        }
+      });
+      var refChange = locUpdate && locUpdate.changed_fields ? (locUpdate.changed_fields["reference_answer." + cfg.key] || null) : null;
+      if (refChange) {
+        var refNote = document.createElement("div");
+        refNote.className = "inline-help";
+        refNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(refChange.before) + " · Suggested: " + stringifyForDisplay(refChange.after);
+        block.wrapper.appendChild(refNote);
+      }
+      locRefGrid.appendChild(block.wrapper);
+    });
+    els.rubricLocalisationEditor.appendChild(locRefGrid);
+
+    ["3", "2", "1", "0"].forEach(function (score) {
+      var block = createInputFieldBlock({
+        label: score + " points",
+        type: "textarea",
+        rows: 3,
+        value: localisation[score],
+        eventType: "change",
+        onChange: function () {
+          localisation[score] = this.value;
+          markUpdateUnconfirmed(caseObj, "rubric", "Localisation", score);
+          markDirty();
+          renderCurrentCase();
+        }
+      });
+      var scoreChange = locUpdate && locUpdate.changed_fields ? (locUpdate.changed_fields[score] || null) : null;
+      if (scoreChange) {
+        var scoreNote = document.createElement("div");
+        scoreNote.className = "inline-help";
+        scoreNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(scoreChange.before) + " · Suggested: " + stringifyForDisplay(scoreChange.after);
+        block.wrapper.appendChild(scoreNote);
+      }
+      els.rubricLocalisationEditor.appendChild(block.wrapper);
+    });
+    renderFieldComparison(els.rubricLocalisationEditor, "Doctor localisation rubric OK", doctorEntries, function (answer) { return answer.localisation_rubric_ok; });
+    renderLongCommentComparison(els.rubricLocalisationEditor, "Doctor localisation comments", doctorEntries, function (answer) { return answer.localisation_comment; });
+    if (locUpdate) {
+      var locBox = createUpdateBox("Stored localisation rubric suggestion", locUpdate, function (decision) {
+        setUpdateDecision(caseObj, "rubric", "Localisation", decision);
+        markDirty();
+        renderCurrentCase();
+      });
+      if (locBox) els.rubricLocalisationEditor.appendChild(locBox);
+    }
+
+    var diagRefBlock = createInputFieldBlock({
+      label: "Reference answer",
+      type: "textarea",
+      rows: 2,
+      value: diagnosis.reference_answer,
+      eventType: "change",
+      onChange: function () {
+        diagnosis.reference_answer = this.value;
+        markUpdateUnconfirmed(caseObj, "rubric", "Diagnosis", "reference_answer");
+        markDirty();
+        renderCurrentCase();
+      }
+    });
+    var diagRefChange = diagUpdate && diagUpdate.changed_fields ? (diagUpdate.changed_fields.reference_answer || null) : null;
+    if (diagRefChange) {
+      var diagRefNote = document.createElement("div");
+      diagRefNote.className = "inline-help";
+      diagRefNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(diagRefChange.before) + " · Suggested: " + stringifyForDisplay(diagRefChange.after);
+      diagRefBlock.wrapper.appendChild(diagRefNote);
+    }
+    els.rubricDiagnosisEditor.appendChild(diagRefBlock.wrapper);
+
+    ["3", "2", "1", "0"].forEach(function (score) {
+      var block = createInputFieldBlock({
+        label: score + " points",
+        type: "textarea",
+        rows: 3,
+        value: diagnosis[score],
+        eventType: "change",
+        onChange: function () {
+          diagnosis[score] = this.value;
+          markUpdateUnconfirmed(caseObj, "rubric", "Diagnosis", score);
+          markDirty();
+          renderCurrentCase();
+        }
+      });
+      var scoreChange = diagUpdate && diagUpdate.changed_fields ? (diagUpdate.changed_fields[score] || null) : null;
+      if (scoreChange) {
+        var scoreNote = document.createElement("div");
+        scoreNote.className = "inline-help";
+        scoreNote.textContent = "Modified by suggestion · Original: " + stringifyForDisplay(scoreChange.before) + " · Suggested: " + stringifyForDisplay(scoreChange.after);
+        block.wrapper.appendChild(scoreNote);
+      }
+      els.rubricDiagnosisEditor.appendChild(block.wrapper);
+    });
+    renderFieldComparison(els.rubricDiagnosisEditor, "Doctor diagnosis rubric OK", doctorEntries, function (answer) { return answer.diagnosis_rubric_ok; });
+    renderLongCommentComparison(els.rubricDiagnosisEditor, "Doctor diagnosis comments", doctorEntries, function (answer) { return answer.diagnosis_comment; });
+    if (diagUpdate) {
+      var diagBox = createUpdateBox("Stored diagnosis rubric suggestion", diagUpdate, function (decision) {
+        setUpdateDecision(caseObj, "rubric", "Diagnosis", decision);
+        markDirty();
+        renderCurrentCase();
+      });
+      if (diagBox) els.rubricDiagnosisEditor.appendChild(diagBox);
+    }
+  }
+
+  function renderDoctorRawSection(caseObj, doctorEntries) {
+    els.doctorRawList.innerHTML = "";
+    if (!doctorEntries.length) {
+      var empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "No doctor annotations attached to this case.";
+      els.doctorRawList.appendChild(empty);
+      return;
+    }
+    doctorEntries.forEach(function (entry) {
+      var card = document.createElement("div");
+      card.className = "doctor-raw-card";
+      var title = document.createElement("h4");
+      var bits = [entry.label];
+      if (entry.source_file) bits.push("file: " + entry.source_file);
+      if (entry.exported_at) bits.push("exported: " + toHumanTime(entry.exported_at));
+      title.textContent = bits.join(" · ");
+      card.appendChild(title);
+      var pre = document.createElement("pre");
+      pre.className = "raw-json";
+      pre.textContent = JSON.stringify(entry.answer, null, 2);
+      card.appendChild(pre);
+      els.doctorRawList.appendChild(card);
+    });
+  }
+
+  function renderCurrentCase() {
+    var caseObj = getCurrentCase();
+    updateHeaderStats();
+    renderProjectFileStatus();
+    if (!caseObj) {
+      els.emptyState.hidden = false;
+      els.caseContent.hidden = true;
+      return;
+    }
+    els.emptyState.hidden = true;
+    els.caseContent.hidden = false;
+    els.summaryCaseIndex.textContent = String(appState.currentIndex + 1);
+    els.summaryCaseId.textContent = getCaseId(caseObj, appState.currentIndex);
+    var doctorEntries = getDoctorEntries(caseObj);
+    updateSummaryBadges(caseObj);
+    renderConflictSummary(caseObj);
+    renderCaseFields(caseObj, doctorEntries);
+    renderDiagnosticSteps(caseObj, doctorEntries);
+    renderImagingExaminations(caseObj, doctorEntries);
+    renderRubricEditors(caseObj, doctorEntries);
+    renderDoctorRawSection(caseObj, doctorEntries);
+    renderCaseList();
+    updateHeaderStats();
+  }
+
+  function switchCase(index, openEuroradToo) {
+    if (!appState.workingCases.length) return;
+    if (index < 0 || index >= appState.workingCases.length) return;
+    appState.currentIndex = index;
+    renderCurrentCase();
+    if (openEuroradToo && els.autoOpenToggle.checked) openEuroradForCurrentCase();
+  }
+
+  function openEuroradForCurrentCase() {
+    var caseObj = getCurrentCase();
+    if (!caseObj || !caseObj.case_url) return;
+    var features = "width=1280,height=900,menubar=yes,toolbar=yes,location=yes,scrollbars=yes,resizable=yes";
+    if (!appState.euroradWindow || appState.euroradWindow.closed) appState.euroradWindow = window.open(caseObj.case_url, "euroradMetaViewerWindow", features);
+    else {
+      try { appState.euroradWindow.location.href = caseObj.case_url; appState.euroradWindow.focus(); }
+      catch (err) { appState.euroradWindow = window.open(caseObj.case_url, "euroradMetaViewerWindow", features); }
+    }
+  }
+
+  function jumpToAnchor(anchorId) {
+    if (!anchorId) return;
+    var target = document.getElementById(anchorId);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function normalizeExportCases() {
+    applyRuleResolutionsToAllCases();
+    syncAllCaseValidations();
+    return sanitizeCasesArray(appState.workingCases);
+  }
+
+  function exportJson() {
+    if (!appState.workingCases.length) return setLoadMessage("No cases to export.", "error");
+    var cases = normalizeExportCases();
+    var blob = new Blob([JSON.stringify(cases, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "eurorad_meta_review_export.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    saveDraft();
+    setLoadMessage("Exported current meta review JSON.", "success");
+  }
+
+  function saveDraft() {
+    if (!appState.workingCases.length) return setLoadMessage("Nothing to save.", "warning");
+    try {
+      var payload = { saved_at: nowIso(), current_index: appState.currentIndex, case_file_name: appState.caseFileName, meta_review_file_name: appState.metaReviewFileName, auto_open: !!els.autoOpenToggle.checked, cases: normalizeExportCases() };
+      storage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      appState.dirty = false;
+      renderProjectFileStatus();
+      setLoadMessage("Draft saved to browser storage.", "success");
+    } catch (err) {
+      setLoadMessage("Draft save failed. The browser storage quota may be full.", "error");
+    }
+  }
+
+  function restoreDraft() {
+    try {
+      var raw = storage.getItem(DRAFT_KEY);
+      if (!raw) { setLoadMessage("No autosave draft found.", "warning"); renderProjectFileStatus(); return; }
+      var parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.cases)) return setLoadMessage("The autosave draft is invalid.", "error");
+      appState.workingCases = sanitizeCasesArray(parsed.cases);
+      appState.currentIndex = typeof parsed.current_index === "number" ? parsed.current_index : 0;
+      appState.caseFileName = parsed.case_file_name || "";
+      appState.metaReviewFileName = parsed.meta_review_file_name || "";
+      els.autoOpenToggle.checked = !!parsed.auto_open;
+      appState.pendingDoctorSources = [];
+      applyRuleResolutionsToAllCases();
+      syncAllCaseValidations();
+      renderProjectFileStatus();
+      renderCaseList();
+      renderCurrentCase();
+      updateHeaderStats();
+      setLoadMessage("Restored autosave draft from browser storage.", "success");
+      appState.dirty = false;
+    } catch (err) {
+      setLoadMessage("Failed to restore the autosave draft.", "error");
+    }
+  }
+
+  function clearDraft() {
+    try { storage.removeItem(DRAFT_KEY); renderProjectFileStatus(); setLoadMessage("Cleared the autosave draft.", "success"); }
+    catch (err) { setLoadMessage("Failed to clear the autosave draft.", "error"); }
+  }
+
+  function autosaveTick() {
+    if (!appState.dirty || !appState.workingCases.length) return;
+    try {
+      var payload = { saved_at: nowIso(), current_index: appState.currentIndex, case_file_name: appState.caseFileName, meta_review_file_name: appState.metaReviewFileName, auto_open: !!els.autoOpenToggle.checked, cases: normalizeExportCases() };
+      storage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      appState.dirty = false;
+      renderProjectFileStatus();
+      els.headerStatus.textContent = "Auto-saved at " + toHumanTime(payload.saved_at);
+    } catch (err) {
+      els.headerStatus.textContent = "Auto-save failed.";
+    }
+  }
+
+  function handleBeforeUnload() {
+    if (!appState.dirty || !appState.workingCases.length) return;
+    try {
+      var payload = { saved_at: nowIso(), current_index: appState.currentIndex, case_file_name: appState.caseFileName, meta_review_file_name: appState.metaReviewFileName, auto_open: !!els.autoOpenToggle.checked, cases: normalizeExportCases() };
+      storage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      appState.dirty = false;
+    } catch (err) {}
+  }
+
+  function bindEvents() {
+    els.btnLoadCases.addEventListener("click", function () { els.inputLoadCases.click(); });
+    els.btnLoadMeta.addEventListener("click", function () { els.inputLoadMeta.click(); });
+    els.btnLoadDoctor1.addEventListener("click", function () { els.inputLoadDoctor1.click(); });
+    els.btnLoadDoctor2.addEventListener("click", function () { els.inputLoadDoctor2.click(); });
+    els.btnLoadDoctor3.addEventListener("click", function () { els.inputLoadDoctor3.click(); });
+    els.inputLoadCases.addEventListener("change", function () { var f = this.files && this.files[0]; loadOriginalCasesFile(f); this.value = ""; });
+    els.inputLoadMeta.addEventListener("change", function () { var f = this.files && this.files[0]; loadMetaReviewFile(f); this.value = ""; });
+    [els.inputLoadDoctor1, els.inputLoadDoctor2, els.inputLoadDoctor3].forEach(function (inputEl) { inputEl.addEventListener("change", function () { var f = this.files && this.files[0]; loadDoctorFile(f); this.value = ""; }); });
+    els.btnPrevCase.addEventListener("click", function () { switchCase(appState.currentIndex - 1, true); });
+    els.btnNextCase.addEventListener("click", function () { switchCase(appState.currentIndex + 1, true); });
+    els.btnOpenEurorad.addEventListener("click", openEuroradForCurrentCase);
+    els.btnSaveDraft.addEventListener("click", saveDraft);
+    els.btnExportJson.addEventListener("click", exportJson);
+    els.btnRestoreDraft.addEventListener("click", function () { if (appState.workingCases.length && !window.confirm("Restore the browser draft and replace the current in-memory project?")) return; restoreDraft(); });
+    els.btnClearDraft.addEventListener("click", clearDraft);
+    els.caseSearch.addEventListener("input", renderCaseList);
+    els.caseFilter.addEventListener("change", renderCaseList);
+    els.btnGreenLight.addEventListener("click", function () {
+      var caseObj = getCurrentCase();
+      if (!caseObj) return;
+      var validation = syncCaseValidation(caseObj);
+      renderCurrentCase();
+      if (validation.ok) {
+        setLoadMessage("Current case is green.", "success");
+      } else {
+        setLoadMessage("Green light is OFF. First required issue: " + validation.firstIssue.label + ".", "warning");
+        requestAnimationFrame(function () { jumpToAnchor(validation.firstIssue.anchorId); });
+      }
+    });
+    window.addEventListener("beforeunload", handleBeforeUnload);
+  }
+
+  bindEvents();
+  renderProjectFileStatus();
+  updateHeaderStats();
+  setInterval(autosaveTick, 5000);
+})();
+</script>
+
+</body>
+</html>
